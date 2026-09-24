@@ -23,10 +23,22 @@ STRING = """
 // string {i}
 if (p{i} != last{i}) {{ n = max(1, g{i} * sr / 1000); slope{i} = (p{i} - cur{i}) / n; left{i} = n; last{i} = p{i}; }}
 if (left{i} > 0) {{ cur{i} = cur{i} + slope{i}; left{i} = left{i} - 1; if (left{i} <= 0) {{ cur{i} = last{i}; }} }}
+// sympathetic resonance: the AVERAGE of every OTHER string's previous sample (never itself, so a
+// lone ringing string can't detune/feed itself), lowpassed then DC-blocked. DC-blocking is essential:
+// without it a steady/near-DC component would recirculate through a near-lossless string forever
+// and rail the delay line (verified by ear/measurement, not just caution).
+othersum = (symsum - lasts{i}) * 0.1111;
+symlp{i} = symlp{i} + 0.3 * (othersum - symlp{i});
+symhp{i} = symhp{i} + 0.01 * (symlp{i} - symhp{i});
+coup{i} = symlp{i} - symhp{i};
 f = mtof(cur{i} + vibamt + {detune});
 per = sr / f;
 omega = twopi * f / sr;
-bb = d{i} > 0 ? bd : b;
+// a damp (d 0→1) blocks the string for 0.4 s, then it's open again to ring along sympathetically
+if (d{i} != lastd{i}) {{ lastd{i} = d{i}; blk{i} = d{i} > 0 ? 0.4 * sr : 0; }}
+if (blkall && d{i} > 0) {{ blk{i} = 0.4 * sr; }}
+blk{i} = max(0, blk{i} - 1);
+bb = blk{i} > 0 ? bd : b;
 look = clamp(per - atan2(bb * sin(omega), 1 - bb * cos(omega)) / omega, 2, 8190);
 if (k{i} != lastk{i}) {{ lastk{i} = k{i}; wait{i} = w{i} * sr / 1000; }}
 if (wait{i} >= 0) {{
@@ -37,11 +49,13 @@ x = 0;
 if (burst{i} > 0) {{ exlp{i} = exlp{i} + pickc * vel{i} * (noise() * vel{i} - exlp{i}); x = exlp{i}; burst{i} = burst{i} - 1; }}
 y = dl{i}.read(look, interp="cubic");
 lp{i} = (1 - bb) * y + bb * lp{i};
-dl{i}.write(clamp(lp{i} * exp(-6.9078 * per / ((d{i} > 0 ? 150 : sustain) * sr / 1000)) + x, -4, 4));
+dl{i}.write(clamp((lp{i} + (blk{i} > 0 ? 0 : coup{i} * 0.008)) * exp(-6.9078 * per / ((blk{i} > 0 ? 150 : sustain) * sr / 1000)) + x, -4, 4));
 env{i} = swelling ? min(1, env{i} + swinc) : 1;
 s = y * env{i} * env{i};
 L = L + s * {gl};
 R = R + s * {gr};
+lasts{i} = s;
+symacc = symacc + s;
 """
 
 # Pedal board hover/click zones: transparent live.text toggles laid over the pedals that
@@ -63,16 +77,24 @@ PEDAL_HOW = (" Click to hold it down, click again to let go. In Chords mode the 
              "themselves when a chord needs them (outlined = pressed for this chord, solid = latched by you, solid with a white border = latched and this chord uses it).")
 CLEAR = [0.0, 0.0, 0.0, 0.0]
 
-COMBS = [1116, 1188, 1277, 1356]
-ALLPASS = [556, 441]
 STEREO_SPREAD = 23
+
+# Spring reverb: a short feedback loop (bulk delay, slightly modulated + band-limited)
+# followed by a short allpass chain (dispersion -> the spring's metallic "boing/drip").
+# L/R are decorrelated with different bulk-delay lengths, LFO rates and allpass offsets.
+SPRING_BASE_MS = {"l": 34.0, "r": 45.0}    # loop bulk delay per side (ms) -> tune the "boing" length
+SPRING_MOD_MS = 1.2                        # slow modulation depth on the bulk delay, avoids metallic buildup
+SPRING_MOD_HZ = {"l": 0.13, "r": 0.19}     # decorrelated modulation rates
+SPRING_FB = 0.85                           # loop feedback: ~2 s to -60 dB, like a long Twin-style tank; must stay < 1
+SPRING_AP = [71, 97, 127, 157, 191, 223]   # allpass dispersion chain, samples @ 44100
+SPRING_AP_G = 0.6                          # allpass coefficient (dispersion amount)
 
 
 def gen_code():
     import math
     decl = [
         "Param vib(0.25);", "Param sustain(12000);", "Param tone(60);", "Param swell(0);",
-        "Param reverb(30);", "Param volume(0);", "Param volpedal(1);",
+        "Param reverb(30);", "Param volume(0);", "Param volpedal(1);", "Param blockall(0);", "History lastba(0);",
         "History vibph(0);", "History vibenv(0);", "History volsm(1);", "History revsm(0.3);",
         "History dcxl(0);", "History dcyl(0);", "History dcxr(0);", "History dcyr(0);",
     ]
@@ -83,17 +105,21 @@ def gen_code():
             f"Delay dl{i}(8192);",
             f"History cur{i}({o});", f"History last{i}({o});", f"History slope{i}(0);", f"History left{i}(0);",
             f"History lastk{i}(0);", f"History wait{i}(-1);", f"History burst{i}(0);", f"History vel{i}(0);",
-            f"History env{i}(1);", f"History lp{i}(0);", f"History exlp{i}(0);",
+            f"History env{i}(1);", f"History lp{i}(0);", f"History exlp{i}(0);", f"History lastd{i}(1);", f"History blk{i}(0);",
+            f"History lasts{i}(0);", f"History symlp{i}(0);", f"History symhp{i}(0);",
         ]
+    decl.append("History symsum(0);")   # sympathetic-resonance bus: raw sum of last sample's string outputs
     for side in "lr":
-        for j in range(len(COMBS)):
-            decl += [f"Delay c{side}{j}(8192);", f"History cf{side}{j}(0);"]
-        for j in range(len(ALLPASS)):
-            decl.append(f"Delay a{side}{j}(8192);")
+        decl += [f"Delay rvd{side}(8192);", f"History rvlfo{side}(0);",
+                 f"History rvlp{side}(0);", f"History rvhp{side}(0);"]
+        for j in range(len(SPRING_AP)):
+            decl.append(f"Delay rva{side}{j}(8192);")
 
     body = [
         "sr = samplerate;",
-        "n = 0; f = 0; per = 0; omega = 0; bb = 0; look = 0; x = 0; y = 0; s = 0; plucked = 0; L = 0; R = 0;",
+        "n = 0; f = 0; per = 0; omega = 0; bb = 0; look = 0; x = 0; y = 0; s = 0; plucked = 0; L = 0; R = 0;"
+        " symacc = 0; othersum = 0;",
+        "blkall = blockall != lastba; lastba = blockall;",   # palm block: the brain bumps it when the last key lifts
         "vibph = wrap(vibph + 5.5 / sr, 0, 1);",
         "vibenv = min(1, vibenv + 1 / (0.7 * sr));",
         "vibamt = sin(vibph * twopi) * vib * 0.3 * vibenv;",   # bar vibrato, up to ±0.3 semitone
@@ -109,26 +135,37 @@ def gen_code():
                                   gl=round(math.cos(theta), 4), gr=round(math.sin(theta), 4)))
     body += [
         "if (plucked) { vibenv = 0; }",
+        "symsum = symacc;",   # sympathetic bus: this sample's total, ready for next sample's "other strings" sum
         "dryl = tanh(L * 0.7);",           # a clean amp that only breaks up on big strums
         "dryr = tanh(R * 0.7);",
         "rin = (dryl + dryr) * 0.04;",
         "revsm = revsm + 0.001 * (reverb * 0.01 - revsm);",
     ]
     for side, off in (("l", 0), ("r", STEREO_SPREAD)):
-        body.append(f"wet{side} = 0;")
-        for j, ln in enumerate(COMBS):
+        body += [
+            f"rvlfo{side} = wrap(rvlfo{side} + {SPRING_MOD_HZ[side]} / sr, 0, 1);",
+            f"rvlen{side} = ({SPRING_BASE_MS[side]} + {SPRING_MOD_MS} * sin(rvlfo{side} * twopi)) * sr / 1000;",
+            f"rvloopy{side} = rvd{side}.read(rvlen{side}, interp=\"cubic\");",
+            f"rvlp{side} = rvloopy{side} * 0.45 + rvlp{side} * 0.55;",     # lowpass -> keeps loop under ~4-5 kHz
+            f"rvhp{side} = rvhp{side} + 0.013 * (rvlp{side} - rvhp{side});",
+            f"rvband{side} = rvlp{side} - rvhp{side};",                    # highpass -> loses below ~100 Hz
+        ]
+        apnode = f"rvband{side}"
+        for j, ln in enumerate(SPRING_AP):
+            outnode = f"rvap{side}{j}"
             body += [
-                f"cy = c{side}{j}.read({ln + off} * sr / 44100);",
-                f"cf{side}{j} = cy * 0.75 + cf{side}{j} * 0.25;",
-                f"c{side}{j}.write(rin + cf{side}{j} * 0.84);",
-                f"wet{side} = wet{side} + cy;",
+                f"rvy{side}{j} = rva{side}{j}.read({ln + off} * sr / 44100);",
+                # true (unity-gain) Schroeder allpass: v[n]=x+g*bufout, y=bufout-g*v[n] (NOT bufout-x,
+                # which is the common "freeverb" shortcut but has gain (1+g) per stage -> unstable in a loop)
+                f"rvv{side}{j} = {apnode} + rvy{side}{j} * {SPRING_AP_G};",
+                f"rva{side}{j}.write(rvv{side}{j});",
+                f"{outnode} = rvy{side}{j} - {SPRING_AP_G} * rvv{side}{j};",
             ]
-        for j, ln in enumerate(ALLPASS):
-            body += [
-                f"ay = a{side}{j}.read({ln + off} * sr / 44100);",
-                f"a{side}{j}.write(wet{side} + ay * 0.5);",
-                f"wet{side} = ay - wet{side};",
-            ]
+            apnode = outnode
+        body += [
+            f"rvd{side}.write(clamp(rin + {apnode} * {SPRING_FB}, -4, 4));",
+            f"wet{side} = {apnode};",
+        ]
     body += [
         "volsm = volsm + 0.001 * (dbtoa(volume) * volpedal - volsm);",
         "outl = (dryl + wetl * revsm) * volsm;",
@@ -325,6 +362,9 @@ def build():
         obj(f"pre_{bid}", f"prepend {msg}", 600 + i * 110, 100)
         wire(bid, f"pre_{bid}")
         wire(f"pre_{bid}", "engine")
+    obj("pre_ring", "prepend ring", 600, 140)   # the brain re-picks sliding strings only once they've faded
+    wire("sustain", "pre_ring")
+    wire("pre_ring", "brain")
 
     # On load: push every control's value, then let the brain draw the neck.
     obj("load_trig", "t b b", 20, 180, ins=1, outs=2, outtype=["bang", "bang"])

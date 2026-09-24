@@ -20,12 +20,13 @@ Delay.prototype.read = function (t) { // cubic (Catmull-Rom); t samples ago, t=1
 };
 
 function Engine() {
+    var seed = 1; // seeded noise: every run renders the same pick, so tests never flake
     var st = this.st = {
         samplerate: SR, twopi: 2 * Math.PI, out1: 0, out2: 0,
         mtof: function (m) { return 440 * Math.pow(2, (m - 69) / 12); },
         clamp: function (x, a, b) { return Math.min(b, Math.max(a, x)); },
         wrap: function (x, a, b) { var r = b - a; return x - r * Math.floor((x - a) / r); },
-        noise: function () { return Math.random() * 2 - 1; },
+        noise: function () { seed = (seed * 16807) % 2147483647; return seed / 1073741823.5 - 1; },
         dbtoa: function (d) { return Math.pow(10, d / 20); },
         min: Math.min, max: Math.max, sin: Math.sin, cos: Math.cos, exp: Math.exp, tanh: Math.tanh, atan2: Math.atan2
     };
@@ -95,12 +96,12 @@ assert(rms(lr[0], SR * 2.5, SR * 3) < rms(lr[0], SR * 0.2, SR * 0.7), "decays");
 console.log("10-string strum peak " + peak.toFixed(2));
 assert(peak < 0.95, "headroom");
 
-// 4. Releasing a key damps the string fast (> 30 dB within 0.4 s).
+// 4. Lifting the last key damps the string and palm-blocks the rest (> 30 dB within 0.4 s).
 e = new Engine();
 e.set("reverb", 0);
 pluck(e, 3, 64);
 var before = rms(e.run(0.3)[0], SR * 0.2, SR * 0.3);
-e.set("d3", 1);
+e.set("d3", 1); e.set("blockall", 1);
 var after = e.run(0.5)[0];
 var drop = 20 * Math.log10(before / rms(after, SR * 0.4, SR * 0.5));
 console.log("damp: -" + drop.toFixed(0) + " dB after 0.4 s");
@@ -112,6 +113,49 @@ e.set("reverb", 0); e.set("swell", 800);
 pluck(e, 3, 64);
 var sw = e.run(1)[0];
 assert(rms(sw, 0, SR * 0.05) < 0.1 * rms(sw, SR * 0.8, SR * 0.9), "swells in");
+
+// 6. Spring reverb: full strum at reverb=100 stays finite and under the limiter, and the reverb's
+// own tail (isolated by damping every string right after the strum) decays instead of running away.
+e = new Engine();
+e.set("reverb", 100); e.set("sustain", 3000); e.set("tone", 60); e.set("vib", 1);
+[66, 63, 68, 64, 59, 56, 54, 52, 50, 47].forEach(function (p, s) { pluck(e, s, p); });
+e.run(0.3);
+for (s = 0; s < 10; s++) e.set("d" + s, 1);   // damp every string; only the reverb loop keeps ringing
+var tail = e.run(3), tpeak = 0, tfinite = true;
+for (i = 0; i < tail[0].length; i++) {
+    if (!isFinite(tail[0][i]) || !isFinite(tail[1][i])) tfinite = false;
+    tpeak = Math.max(tpeak, Math.abs(tail[0][i]), Math.abs(tail[1][i]));
+}
+assert(tfinite, "reverb tail finite");
+console.log("reverb tail peak " + tpeak.toFixed(3));
+assert(tpeak < 0.95, "reverb tail headroom");
+var revEarly = rms(tail[0], 0, SR * 0.1), revLate = rms(tail[0], SR * 2.5, SR * 3);
+console.log("reverb tail rms: early " + revEarly.toFixed(4) + " late " + revLate.toExponential(2));
+assert(revLate < revEarly * 0.1, "reverb tail decays");
+var revMid = rms(tail[0], SR * 0.9, SR * 1.0);   // a spring tank still rings at 1 s (~2 s to -60 dB)
+assert(revMid > revEarly * 0.003, "reverb tail is spring-length, not a sub-ms loop");
+
+// 7. Sympathetic resonance: string 1 (F#4) rings; string 7 (F#3, same pitch class, never plucked,
+// open) picks up energy through the shared bus; a palm block silences it; nothing runs away.
+e = new Engine();
+e.set("sustain", 8000); e.set("reverb", 0);
+pluck(e, 0, 66);
+e.run(1.5);
+var sym = 0;
+for (i = 0; i < 200; i++) { e.run(0.001); sym = Math.max(sym, Math.abs(e.st.lp6)); }
+console.log("sympathetic pickup on string 7: " + sym.toExponential(2));
+assert(sym > 1e-4, "open same-pitch-class string picks up energy");
+e.set("d0", 1); e.set("blockall", 1);
+e.run(0.5);
+assert(Math.abs(e.st.lp6) < sym * 0.01, "palm block silences sympathetic ringing");
+// worst case: all ten strings open, longest sustain, brightest tone, full strum, 10 s
+e = new Engine();
+e.set("sustain", 30000); e.set("tone", 100); e.set("reverb", 100);
+[66, 63, 68, 64, 59, 56, 54, 52, 50, 47].forEach(function (p, s) { pluck(e, s, p); });
+var early = rms(e.run(1)[0], 0, SR), more = e.run(9)[0], stable = true, peak10 = 0;
+for (i = 0; i < more.length; i++) { if (!isFinite(more[i])) stable = false; peak10 = Math.max(peak10, Math.abs(more[i])); }
+assert(stable && peak10 < 1, "coupling stays bounded with every string open");
+assert(rms(more, SR * 8, SR * 9) < early, "and still decays");
 
 console.log("engine: all tests passed");
 

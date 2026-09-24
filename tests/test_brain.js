@@ -11,7 +11,7 @@ function flush() { while (tasks.length) tasks.shift().fn(); }
 function fresh() { B.reset(); out = []; tasks = []; }
 function plucks() { return out.filter(function (m) { return m[0] === 1 && m[1] === "pluck"; }); }
 function sounding(n) { // is MIDI note n ringing on some string at its exact pitch?
-    for (var s = 0; s < 10; s++) if (B.S.str[s].note === n && Math.abs(B.target(s) + B.S.str[s].pre - n) < 1e-9) return true;
+    for (var s = 0; s < 10; s++) if (B.S.str[s].note === n && Math.abs(B.target(s) + B.S.str[s].pre - n) < 0.05) return true;
     return false;
 }
 function play(notes, vel) { notes.forEach(function (n) { B.note(n, vel || 100); }); flush(); }
@@ -34,18 +34,29 @@ assert.strictEqual(B.S.auto, 1 | 2, "A+B pedals");
 assert.strictEqual(plucks().length, 0, "legato bend, no re-pick");
 [61, 64, 69].forEach(function (n) { assert(sounding(n), "A major note " + n); });
 
-// 2b. The same change a second later: the faded strings are re-picked as they bend.
+// 2b. The same change 5 s later (past 1/3 of the 12 s Sustain): the faded strings are re-picked as they bend.
 fresh();
 var clock = 0;
 B.S.now = function () { return clock; };
 play([59, 64, 68]);
-clock = 1000;
+clock = 5000;
 out = [];
 B.noteoff(59); B.noteoff(68);
 play([61, 69]);
 assert.strictEqual(plucks().length, 2, "re-picked while bending");
 assert(out.some(function (m) { return m[1] === "g2" && m[2] > 0; }), "still glides, not snapped");
 [61, 64, 69].forEach(function (n) { assert(sounding(n)); });
+
+// 2c. ...but a chord held a normal length (1 s) just slides/bends, no re-pick.
+fresh();
+clock = 0;
+B.S.now = function () { return clock; };
+play([59, 64, 68]);
+clock = 1000;
+out = [];
+[60, 65, 69].forEach(function (n) { B.note(n, 100); }); [59, 64, 68].forEach(function (n) { B.noteoff(n); }); flush();
+assert.strictEqual(B.S.bar, 1, "slid up a fret");
+assert.strictEqual(plucks().length, 0, "held strings slide without a re-pick");
 
 // 3. Every chord the player can throw at it sounds, with no wrong notes.
 var seed = 1;
@@ -135,10 +146,18 @@ B.pedal("B", 0);
 ped = pedalsOut();
 assert.strictEqual(ped[2], 0, "released B is off");
 
+// 9c. Cabinet drop: A+B flatten the unpulled strings slightly; pulled strings stay in tune.
+fresh();
+B.pedal("A", 1); B.pedal("B", 1);
+assert(B.target(3) < 64 && B.target(3) > 63.9, "string 4 (E) sags with A+B down");
+assert.strictEqual(B.target(4), 61, "string 5 raised by A is exact");
+B.pedal("A", 0); B.pedal("B", 0);
+assert.strictEqual(B.target(3), 64, "no pedals, no drop");
+
 // 10. Gen messages are well formed: name + number.
 out.forEach(function (m) {
     if (m[0] !== 0) return;
-    assert(/^([pgvwkd]\d|vib|volpedal)$/.test(m[1]), "bad gen message " + m[1]);
+    assert(/^([pgvwkd]\d|vib|volpedal|blockall)$/.test(m[1]), "bad gen message " + m[1]);
     assert(typeof m[2] === "number" && isFinite(m[2]), "bad value " + m);
 });
 

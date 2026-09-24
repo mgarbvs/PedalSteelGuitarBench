@@ -22,10 +22,10 @@ var CHANGES = [ // [string index, semitones] per pedal, same order as PEDALS
     [[1, -1], [8, -1]]  // RKR: D# → D, D → C#
 ];
 var RAISES = 1 | 2 | 4 | 8 | 32;
+var CAB_DROP = 0.01; // semitones each engaged raise pedal/lever flattens the strings it doesn't move (cabinet flex); tune by ear
 var LOW = 47, HIGH = 91, MAX_FRET = 22;
 var WINDOW_MS = 12;  // notes this close together form one chord
 var GRACE_MS = 60;   // a string released this recently still counts as legato
-var REPICK_MS = 400; // a gliding string picked longer ago than this is picked again as it slides
 var STRING_KEYS = { 48: 9, 50: 8, 52: 7, 53: 6, 55: 5, 57: 4, 59: 3, 60: 2, 62: 1, 64: 0 }; // C3..E4 white keys
 var PEDAL_KEYS = { 36: 0, 38: 1, 40: 2, 41: 3, 43: 4, 45: 5, 47: 6 };                     // C2..B2 white keys
 
@@ -72,7 +72,7 @@ function reset() {
     S = {
         mode: 0, bar: 0, barDial: 0, bendFrets: 0,
         auto: 0, manual: 0, keyPedals: 0, used: 0, // used: latched pedals the current chord needs
-        slide: 180, strum: 12, bendIn: 0.4, vibKnob: 0.25, modwheel: 0, sustain: false,
+        slide: 180, ringMs: 12000, blocks: 0, strum: 12, bendIn: 0.4, vibKnob: 0.25, modwheel: 0, sustain: false,
         keys: {},        // held key → folded note (chords mode) / string (strings mode)
         pending: [],     // [{n, v, tap}] notes waiting for the chord window
         str: [], sent: [], counter: [],
@@ -94,7 +94,14 @@ function mask() { return S.auto | S.manual | S.keyPedals; }
 function pedalTime() { return Math.max(60, Math.min(400, S.slide * 0.6)); }
 
 function target(s) {
-    return OPEN[s] + S.bar + S.bendFrets + offs(mask())[s] + S.str[s].offset - S.str[s].pre;
+    var m = mask(), off = offs(m)[s];
+    return OPEN[s] + S.bar + S.bendFrets + off + S.str[s].offset - S.str[s].pre - (off ? 0 : cabDrop(m));
+}
+
+function cabDrop(m) {
+    var n = 0;
+    for (var p = 0; p < 7; p++) if (m & RAISES & (1 << p)) n++;
+    return CAB_DROP * n;
 }
 
 function sendPitches(glideMs, snap) { // snap: strings about to be picked jump straight to pitch
@@ -168,6 +175,13 @@ function noteoff(key) {
     for (var i = 0; i < S.pending.length; i++) if (S.pending[i].n === n) S.pending[i].tap = true;
     if (S.sustain) return;
     releaseNote(n);
+    blockIfIdle();
+}
+
+// Last key up (sustain off): palm-block every string, so sympathetic ringing stops with the phrase.
+function blockIfIdle() {
+    for (var k in S.keys) return;
+    if (!S.sustain) outlet(0, "blockall", ++S.blocks);
 }
 
 function releaseNote(n) {
@@ -200,6 +214,7 @@ function cc(num, val) {
             var held = {};
             for (var k in S.keys) held[S.keys[k]] = true;
             for (var s = 0; s < 10; s++) if (S.str[s].note >= 0 && !held[S.str[s].note]) damp(s);
+            blockIfIdle();
         }
     } else if (num === 123) allOff();
 }
@@ -209,6 +224,7 @@ function allOff() {
     S.pending = [];
     S.keyPedals = 0;
     for (var s = 0; s < 10; s++) if (S.str[s].note >= 0) damp(s);
+    blockIfIdle();
     sendPitches(0);
 }
 
@@ -245,6 +261,7 @@ function pluck(s, vel) { // click on a string in the neck display (1-based)
 }
 
 function slide(ms) { S.slide = ms; }
+function ring(ms) { S.ringMs = ms; } // Sustain knob: strings fall 60 dB over this time
 function strum(ms) { S.strum = ms; }
 function bendin(pct) { S.bendIn = pct / 100; }
 function vibrato(pct) { S.vibKnob = pct / 100; vibOut(); }
@@ -387,7 +404,7 @@ function solve() {
         S.str[a.s].lastNote = required[a.i].n;
         if (a.glide) {
             outlet(0, "d" + a.s, 0);
-            if (now - S.str[a.s].pluckedAt > REPICK_MS) plucks.push(a); // faded: pick it as it slides
+            if (now - S.str[a.s].pluckedAt > S.ringMs / 3) plucks.push(a); // faded 20 dB+: pick it as it slides
             continue;
         }
         if (bendInNow && raise[a.s] > 0) S.str[a.s].pre = raise[a.s];
@@ -421,7 +438,7 @@ if (typeof module !== "undefined") {
     module.exports = {
         get S() { return S; }, reset: reset, note: note, noteoff: noteoff, solve: solve, applyBend: applyBend,
         bend: bend, cc: cc, mode: mode, bar: bar, pedal: pedal, pluck: pluck, init: init,
-        bendin: bendin, strum: strum, slide: slide, vibrato: vibrato,
+        bendin: bendin, strum: strum, slide: slide, ring: ring, vibrato: vibrato,
         offsets: offsets, findVoicing: findVoicing, target: target, OPEN: OPEN, COMBOS: COMBOS
     };
 }

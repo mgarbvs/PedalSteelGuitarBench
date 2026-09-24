@@ -42,10 +42,12 @@ behaves like strings that can be re-tuned while they ring.
   Notes no grip covers are bent behind the bar on a spare string, the way players do.
 - **Legato = bends and slides, not re-picks.** Held strings that belong to the next chord glide to their new
   pitch: pedal changes take 60–400 ms (0.6 × Slide), bar moves take the Slide time. Strings that had already
-  faded (> 400 ms) are picked again as they slide, so a change is never silent.
+  faded (held longer than a third of the Sustain time, about 20 dB down) are picked again as they slide, so a change is never silent.
 - **The "cry" (Bend In).** On a fresh chord that needs raise pedals, sometimes the strings are picked
   *unpedaled* and the pedals are pressed ~90 ms after the strum: the signature pedal steel swoop into a chord.
   Bend In also makes raise pedals cheaper in the scoring, so the player reaches for them more.
+- **Cabinet drop.** Each raise pedal or lever that's down flattens the strings it doesn't pull by 1 cent,
+  like a real cabinet flexing under the extra tension (`CAB_DROP` in `steel_brain.js`).
 - **Strum and pick order.** Chords are picked low string to high with the Strum spacing, like a thumb and
   fingerpicks rolling through a grip.
 
@@ -68,9 +70,15 @@ behaves like strings that can be re-tuned while they ring.
   because it's one bar.
 - **Volume-pedal swell.** Per-note fade-in with a squared (audio-taper) curve, and CC 11 as a global
   volume pedal, for the "no attack" steel swell.
-- **Amp and room.** Strings are panned across the stereo field (low strings left, high strings right),
-  summed into a gentle `tanh` stage that stays clean except on big strums, then a Freeverb-style reverb
-  (4 combs + 2 allpasses per side, stereo-spread) for the amp's spring/room, a DC blocker and a soft limiter.
+- **Sympathetic resonance.** A shared bus carries the (DC-blocked, lowpassed) average of every other
+  string's previous sample into each string's delay line, so ringing strings excite open ones that share
+  pitches or partials, the way a real steel's strings couple through the bridge. Released strings are blocked
+  for 0.4 s and then open again, and lifting the last key palm-blocks every string, so the ring stops with
+  the phrase.
+- **Amp and spring reverb.** Strings are panned across the stereo field (low strings left, high strings
+  right), summed into a gentle `tanh` stage that stays clean except on big strums, then a spring-tank reverb
+  (a modulated, band-limited feedback loop through a short allpass dispersion chain per side, L/R
+  decorrelated) for the amp's metallic "boing", a DC blocker and a soft limiter.
 
 ## Build
 ```bash
