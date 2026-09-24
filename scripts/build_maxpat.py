@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+"""build_maxpat.py — emit m4l/PedalSteel.maxpat (source of truth; never hand-edit the output).
+
+    midiin → midiparse → steel_brain.js ─┬─► gen~ (10 waveguide strings + reverb) → plugout~
+                                         └─► steel_neck.js (jsui neck + pedal board)
+    steel_neck.js mouse → brain (pluck / pedal) or → Bar dial (drag)
+    live.dials → brain (playing feel) or → gen~ (sound)
+"""
+import json
+import os
+import sys
+
+OPEN = [66, 63, 68, 64, 59, 56, 54, 52, 50, 47]      # E9, strings 1..10
+DETUNE_CENTS = [1.5, -1, 0.5, -1.5, 1, -0.5, 1.5, -1, 0.5, -1.5]
+DEVICE_W = 740
+
+# ── Gen~ engine ─────────────────────────────────────────────────────────────
+# One Karplus-Strong waveguide per string: a delay line whose length follows a
+# gliding pitch (so the bar and pedals bend ringing strings), a one-pole loss
+# filter, a noise-burst pick, and a per-note "volume pedal" swell envelope.
+
+STRING = """
+// string {i}
+if (p{i} != last{i}) {{ n = max(1, g{i} * sr / 1000); slope{i} = (p{i} - cur{i}) / n; left{i} = n; last{i} = p{i}; }}
+if (left{i} > 0) {{ cur{i} = cur{i} + slope{i}; left{i} = left{i} - 1; if (left{i} <= 0) {{ cur{i} = last{i}; }} }}
+f = mtof(cur{i} + vibamt + {detune});
+per = sr / f;
+omega = twopi * f / sr;
+bb = d{i} > 0 ? bd : b;
+look = clamp(per - atan2(bb * sin(omega), 1 - bb * cos(omega)) / omega, 2, 8190);
+if (k{i} != lastk{i}) {{ lastk{i} = k{i}; wait{i} = w{i} * sr / 1000; }}
+if (wait{i} >= 0) {{
+    wait{i} = wait{i} - 1;
+    if (wait{i} < 0) {{ burst{i} = per; vel{i} = v{i}; env{i} = swelling ? 0 : 1; plucked = 1; }}
+}}
+x = 0;
+if (burst{i} > 0) {{ exlp{i} = exlp{i} + pickc * vel{i} * (noise() * vel{i} - exlp{i}); x = exlp{i}; burst{i} = burst{i} - 1; }}
+y = dl{i}.read(look, interp="cubic");
+lp{i} = (1 - bb) * y + bb * lp{i};
+dl{i}.write(clamp(lp{i} * exp(-6.9078 * per / ((d{i} > 0 ? 150 : sustain) * sr / 1000)) + x, -4, 4));
+env{i} = swelling ? min(1, env{i} + swinc) : 1;
+s = y * env{i} * env{i};
+L = L + s * {gl};
+R = R + s * {gr};
+"""
+
+# Pedal board hover/click zones: transparent live.text toggles laid over the pedals that
+# steel_neck.js draws (same geometry as its pedalRects() at 470×158, plus the jsui's 4px offset).
+PEDALS = [
+    ("A", 38, 30, "Raises strings 5 and 10 from B to C#. Pressed together with B, it turns the open E "
+                  "chord into A: the classic pedal steel sound."),
+    ("B", 72, 30, "Raises strings 3 and 6 from G# to A. Pressed together with A, it turns the open E "
+                  "chord into A: the classic pedal steel sound."),
+    ("C", 106, 30, "Raises string 4 from E to F# and string 5 from B to C#. Pressed with B, it turns the "
+                   "E chord into F# minor."),
+    ("LKL", 150, 36, "Left knee lever, pushed left: raises both E strings (4 and 8) a half step to F."),
+    ("LKR", 190, 36, "Left knee lever, pushed right: lowers both E strings (4 and 8) a half step to D#."),
+    ("RKL", 230, 36, "Right knee lever, pushed left: raises both F# strings (1 and 7) a half step to G."),
+    ("RKR", 270, 36, "Right knee lever, pushed right: lowers string 2 from D# to D and string 9 from D to C#. "
+                     "Good for bluesy 7th-chord sounds."),
+]
+PEDAL_HOW = (" Click to hold it down, click again to let go. In Chords mode the pedals also press "
+             "themselves when a chord needs them (outlined = pressed for this chord, solid = latched by you, solid with a white border = latched and this chord uses it).")
+CLEAR = [0.0, 0.0, 0.0, 0.0]
+
+COMBS = [1116, 1188, 1277, 1356]
+ALLPASS = [556, 441]
+STEREO_SPREAD = 23
+
+
+def gen_code():
+    import math
+    decl = [
+        "Param vib(0.25);", "Param sustain(12000);", "Param tone(60);", "Param swell(0);",
+        "Param reverb(30);", "Param volume(0);", "Param volpedal(1);",
+        "History vibph(0);", "History vibenv(0);", "History volsm(1);", "History revsm(0.3);",
+        "History dcxl(0);", "History dcyl(0);", "History dcxr(0);", "History dcyr(0);",
+    ]
+    for i, o in enumerate(OPEN):
+        decl += [
+            f"Param p{i}({o});", f"Param g{i}(0);", f"Param k{i}(0);", f"Param v{i}(0.8);",
+            f"Param w{i}(0);", f"Param d{i}(1);",
+            f"Delay dl{i}(8192);",
+            f"History cur{i}({o});", f"History last{i}({o});", f"History slope{i}(0);", f"History left{i}(0);",
+            f"History lastk{i}(0);", f"History wait{i}(-1);", f"History burst{i}(0);", f"History vel{i}(0);",
+            f"History env{i}(1);", f"History lp{i}(0);", f"History exlp{i}(0);",
+        ]
+    for side in "lr":
+        for j in range(len(COMBS)):
+            decl += [f"Delay c{side}{j}(8192);", f"History cf{side}{j}(0);"]
+        for j in range(len(ALLPASS)):
+            decl.append(f"Delay a{side}{j}(8192);")
+
+    body = [
+        "sr = samplerate;",
+        "n = 0; f = 0; per = 0; omega = 0; bb = 0; look = 0; x = 0; y = 0; s = 0; plucked = 0; L = 0; R = 0;",
+        "vibph = wrap(vibph + 5.5 / sr, 0, 1);",
+        "vibenv = min(1, vibenv + 1 / (0.7 * sr));",
+        "vibamt = sin(vibph * twopi) * vib * 0.3 * vibenv;",   # bar vibrato, up to ±0.3 semitone
+        "b = 1 - (0.3 + 0.0065 * tone);",                      # loop filter: higher tone = brighter
+        "bd = 1 - (0.3 + 0.0065 * tone) * 0.6;",               # damped strings go dark too
+        "pickc = 0.15 + 0.008 * tone;",
+        "swelling = swell > 1;",
+        "swinc = 1 / max(1, swell * sr / 1000);",
+    ]
+    for i in range(10):
+        theta = (0.5 + 0.3 * (4.5 - i) / 4.5) * math.pi / 2     # string 1 right, string 10 left
+        body.append(STRING.format(i=i, detune=DETUNE_CENTS[i] / 100,
+                                  gl=round(math.cos(theta), 4), gr=round(math.sin(theta), 4)))
+    body += [
+        "if (plucked) { vibenv = 0; }",
+        "dryl = tanh(L * 0.7);",           # a clean amp that only breaks up on big strums
+        "dryr = tanh(R * 0.7);",
+        "rin = (dryl + dryr) * 0.04;",
+        "revsm = revsm + 0.001 * (reverb * 0.01 - revsm);",
+    ]
+    for side, off in (("l", 0), ("r", STEREO_SPREAD)):
+        body.append(f"wet{side} = 0;")
+        for j, ln in enumerate(COMBS):
+            body += [
+                f"cy = c{side}{j}.read({ln + off} * sr / 44100);",
+                f"cf{side}{j} = cy * 0.75 + cf{side}{j} * 0.25;",
+                f"c{side}{j}.write(rin + cf{side}{j} * 0.84);",
+                f"wet{side} = wet{side} + cy;",
+            ]
+        for j, ln in enumerate(ALLPASS):
+            body += [
+                f"ay = a{side}{j}.read({ln + off} * sr / 44100);",
+                f"a{side}{j}.write(wet{side} + ay * 0.5);",
+                f"wet{side} = ay - wet{side};",
+            ]
+    body += [
+        "volsm = volsm + 0.001 * (dbtoa(volume) * volpedal - volsm);",
+        "outl = (dryl + wetl * revsm) * volsm;",
+        "outr = (dryr + wetr * revsm) * volsm;",
+        "dcyl = outl - dcxl + 0.995 * dcyl; dcxl = outl;",   # DC blocker
+        "dcyr = outr - dcxr + 0.995 * dcyr; dcxr = outr;",
+        "out1 = tanh(dcyl);",              # soft limit, never a hard digital clip
+        "out2 = tanh(dcyr);",
+    ]
+    return "\n".join(decl) + "\n" + "\n".join(body) + "\n"
+
+
+# ── Patcher helpers ─────────────────────────────────────────────────────────
+
+boxes, lines = [], []
+
+
+def add(**kw):
+    boxes.append({"box": kw})
+    return kw["id"]
+
+
+def obj(bid, text, x, y, ins=1, outs=1, outtype=None, w=None, **kw):
+    return add(id=bid, maxclass="newobj", text=text, numinlets=ins, numoutlets=outs,
+               outlettype=outtype if outtype is not None else [""] * outs,
+               patching_rect=[x, y, w or max(40, 7 * len(text)), 22], **kw)
+
+
+def wire(src, dst, outlet=0, inlet=0):
+    lines.append({"patchline": {"source": [src, outlet], "destination": [dst, inlet]}})
+
+
+def pres(rect):
+    return dict(presentation=1, presentation_rect=rect)
+
+
+def comment(bid, text, rect, size=10, bold=False, color=None):
+    kw = dict(fontname="Ableton Sans Bold" if bold else "Ableton Sans Medium", fontsize=size)
+    if color:
+        kw["textcolor"] = color
+    return add(id=bid, maxclass="comment", text=text, numinlets=1, numoutlets=0,
+               patching_rect=[rect[0] + 900, rect[1] + 500, rect[2], rect[3]], **pres(rect), **kw)
+
+
+def panel(bid, rect):  # background=1: always drawn behind controls (else earlier boxes draw on top)
+    return add(id=bid, maxclass="panel", numinlets=1, numoutlets=0, bgcolor=[0.14, 0.14, 0.14, 1.0],
+               rounded=4, background=1, patching_rect=[rect[0] + 900, rect[1] + 500, rect[2], rect[3]], **pres(rect))
+
+
+def dial(bid, longname, short, rect, lo, hi, init, unitstyle, info, exponent=1.0):
+    valueof = {
+        "parameter_longname": longname, "parameter_shortname": short, "parameter_type": 0,
+        "parameter_mmin": float(lo), "parameter_mmax": float(hi),
+        "parameter_initial_enable": 1, "parameter_initial": [float(init)],
+        "parameter_unitstyle": unitstyle,
+    }
+    if exponent != 1.0:
+        valueof["parameter_exponent"] = exponent
+    return add(id=bid, maxclass="live.dial", varname=bid, numinlets=1, numoutlets=2,
+               outlettype=["", "float"], parameter_enable=1, annotation_name=longname, annotation=info,
+               patching_rect=[rect[0] + 900, rect[1] + 500, rect[2], rect[3]], **pres(rect),
+               saved_attribute_attributes={"valueof": valueof})
+
+
+# ── Build ───────────────────────────────────────────────────────────────────
+
+def build():
+    # MIDI in → brain
+    obj("thisdev", "live.thisdevice", 20, 20, ins=1, outs=3, outtype=["bang", "int", "int"])
+    obj("midiin", "midiin", 20, 60)
+    obj("midiparse", "midiparse", 20, 90, ins=1, outs=8, outtype=["", "", "", "int", "int", "int", "int", ""])
+    obj("pre_note", "prepend note", 20, 130)
+    obj("pre_cc", "prepend cc", 130, 130)
+    obj("pre_bend", "prepend bend", 240, 130)
+    obj("brain", "js steel_brain.js", 20, 220, ins=1, outs=2, w=160)
+    wire("midiin", "midiparse")
+    wire("midiparse", "pre_note", 0)
+    wire("midiparse", "pre_cc", 2)
+    wire("midiparse", "pre_bend", 5)
+    for p in ("pre_note", "pre_cc", "pre_bend"):
+        wire(p, "brain")
+
+    # Engine
+    code = gen_code()
+    gen_patcher = {
+        "fileversion": 1,
+        "appversion": {"major": 9, "minor": 0, "revision": 0, "architecture": "x64", "modernui": 1},
+        "classnamespace": "dsp.gen", "rect": [100.0, 100.0, 700.0, 700.0],
+        "boxes": [
+            {"box": {"id": "code", "maxclass": "codebox", "code": code, "fontface": 0,
+                     "fontname": "<Monospaced>", "fontsize": 12.0, "numinlets": 0, "numoutlets": 2,
+                     "outlettype": ["", ""], "patching_rect": [20.0, 20.0, 640.0, 560.0]}},
+            {"box": {"id": "out1", "maxclass": "newobj", "text": "out 1", "numinlets": 1, "numoutlets": 0,
+                     "patching_rect": [20.0, 600.0, 40.0, 22.0]}},
+            {"box": {"id": "out2", "maxclass": "newobj", "text": "out 2", "numinlets": 1, "numoutlets": 0,
+                     "patching_rect": [620.0, 600.0, 40.0, 22.0]}},
+        ],
+        "lines": [
+            {"patchline": {"source": ["code", 0], "destination": ["out1", 0]}},
+            {"patchline": {"source": ["code", 1], "destination": ["out2", 0]}},
+        ],
+    }
+    obj("engine", "gen~", 20, 300, ins=1, outs=2, outtype=["signal", "signal"], w=160, patcher=gen_patcher)
+    obj("plugout", "plugout~", 20, 360, ins=2, outs=0, outtype=[])
+    wire("brain", "engine", 0)
+    wire("engine", "plugout", 0, 0)
+    wire("engine", "plugout", 1, 1)
+
+    # Pedal/lever buttons: added before the neck so they sit on top of it (earlier = frontmost).
+    for name, x, w, info in PEDALS:
+        bid = "ped_" + name
+        add(id=bid, maxclass="live.text", varname=bid, numinlets=1, numoutlets=2, outlettype=["", ""],
+            parameter_enable=1, mode=1, text="", texton="", annotation_name=f"{name} " +
+            ("Pedal" if len(name) == 1 else "Knee Lever"), annotation=info + PEDAL_HOW,
+            bgcolor=CLEAR, bgoncolor=CLEAR, activebgcolor=CLEAR, activebgoncolor=CLEAR,
+            bordercolor=CLEAR, focusbordercolor=CLEAR, textcolor=CLEAR, activetextcolor=CLEAR,
+            activetextoncolor=CLEAR, textoncolor=CLEAR,
+            patching_rect=[x + 900, 700, w, 20], **pres([x + 4, 118, w, 20]),
+            saved_attribute_attributes={"valueof": {
+                "parameter_longname": f"Pedal {name}", "parameter_shortname": name, "parameter_type": 2,
+                "parameter_enum": ["Off", "On"], "parameter_mmax": 1,
+                "parameter_initial_enable": 1, "parameter_initial": [0]}})
+        obj(f"pre_{bid}", f"prepend pedal {name}", x + 900, 740)
+        wire(bid, f"pre_{bid}")
+        wire(f"pre_{bid}", "brain")
+
+    # Neck display (the big clickable steel)
+    add(id="neck", maxclass="jsui", filename="steel_neck.js", varname="neck", numinlets=1, numoutlets=1,
+        outlettype=[""], border=0, parameter_enable=0, annotation_name="Pedal Steel",
+        annotation="The steel: strings light up as they ring, the chrome bar shows where the "
+                   "slide is, and the pedals/levers light when they bend a string. Click a string "
+                   "to pick it, drag across the neck to slide the bar, click a pedal or lever to engage it.",
+        patching_rect=[300, 220, 470, 158], **pres([4, 4, 470, 158]))
+    wire("brain", "neck", 1)
+    obj("neck_route", "route bar", 300, 400, ins=2, outs=2)
+    wire("neck", "neck_route")
+    wire("neck_route", "brain", 1)            # pluck / pedal messages
+
+    # PLAY card
+    panel("play_card", [480, 4, 256, 76])
+    comment("play_lbl", "PLAY", [486, 6, 60, 18], size=11, bold=True)
+    add(id="mode", maxclass="live.tab", varname="mode", numinlets=1, numoutlets=3,
+        outlettype=["", "", "float"], parameter_enable=1, num_lines_patching=1, num_lines_presentation=1, annotation_name="Mode",
+        annotation="Chords: play anything on your keyboard and it is voiced like a steel player "
+                   "would, with automatic bar slides and pedal bends. Strings: play the real "
+                   "instrument — white keys C3–E4 pick strings, C2–B2 hold pedals and levers.",
+        patching_rect=[480 + 900, 504, 150, 18], **pres([580, 7, 150, 17]),
+        saved_attribute_attributes={"valueof": {
+            "parameter_longname": "Mode", "parameter_shortname": "Mode", "parameter_type": 2,
+            "parameter_enum": ["Chords", "Strings"], "parameter_mmax": 1,
+            "parameter_initial_enable": 1, "parameter_initial": [0]}})
+    obj("pre_mode", "prepend mode", 480, 20)
+    wire("mode", "pre_mode")
+    wire("pre_mode", "brain")
+
+    play = [
+        ("bar", "Bar", "Bar", 0, 22, 0, 1, "bar",
+         "Where the steel bar sits, in frets. Turn it while strings ring to slide. "
+         "In Chords mode the bar also moves by itself to fit each chord.", 1.0),
+        ("slide", "Slide", "Slide", 20, 1000, 180, 2, "slide",
+         "How long bar slides and pedal bends take when you change chords legato.", 2.0),
+        ("strum", "Strum", "Strum", 0, 80, 12, 2, "strum",
+         "Time between strings when a chord is picked. 0 = all at once.", 1.0),
+        ("bendin", "Bend In", "BendIn", 0, 100, 40, 5, "bendin",
+         "How often chords are picked unpedaled and then bent up into place — the classic "
+         "pedal steel cry. Higher also makes the player reach for pedals more.", 1.0),
+        ("vibrato", "Vibrato", "Vib", 0, 100, 25, 5, "vibrato",
+         "Bar vibrato that fades in on held notes. The mod wheel adds more.", 1.0),
+    ]
+    for i, (bid, ln, sn, lo, hi, init, us, msg, info, ex) in enumerate(play):
+        dial(bid, ln, sn, [484 + i * 50, 28, 46, 48], lo, hi, init, us, info, ex)
+        obj(f"pre_{bid}", f"prepend {msg}", 600 + i * 110, 60)
+        wire(bid, f"pre_{bid}")
+        wire(f"pre_{bid}", "brain")
+    wire("neck_route", "bar", 0)             # dragging on the neck turns the Bar knob
+
+    # SOUND card
+    panel("sound_card", [480, 84, 256, 78])
+    comment("sound_lbl", "SOUND", [486, 86, 60, 18], size=11, bold=True)
+    sound = [
+        ("swell", "Swell", "Swell", 0, 2000, 0, 2, "swell",
+         "Volume-pedal swell on every note: 0 = normal pick attack, higher = notes fade in.", 2.0),
+        ("sustain", "Sustain", "Sustain", 2000, 30000, 12000, 2, "sustain",
+         "How long a held string rings.", 1.0),
+        ("tone", "Tone", "Tone", 0, 100, 60, 5, "tone",
+         "Dark and mellow to bright and glassy.", 1.0),
+        ("reverb", "Reverb", "Reverb", 0, 100, 30, 5, "reverb",
+         "Amp-style room reverb.", 1.0),
+        ("volume", "Volume", "Vol", -40, 6, 0, 4, "volume",
+         "Output level. An expression pedal (CC 11) works as the steel's volume pedal.", 1.0),
+    ]
+    for i, (bid, ln, sn, lo, hi, init, us, msg, info, ex) in enumerate(sound):
+        dial(bid, ln, sn, [484 + i * 50, 108, 46, 48], lo, hi, init, us, info, ex)
+        obj(f"pre_{bid}", f"prepend {msg}", 600 + i * 110, 100)
+        wire(bid, f"pre_{bid}")
+        wire(f"pre_{bid}", "engine")
+
+    # On load: push every control's value, then let the brain draw the neck.
+    obj("load_trig", "t b b", 20, 180, ins=1, outs=2, outtype=["bang", "bang"])
+    add(id="msg_init", maxclass="message", text="init", numinlets=2, numoutlets=1, outlettype=[""],
+        patching_rect=[20, 200, 40, 22])
+    add(id="msg_bang", maxclass="message", text="bang", numinlets=2, numoutlets=1, outlettype=[""],
+        patching_rect=[80, 200, 40, 22])
+    wire("thisdev", "load_trig")
+    wire("load_trig", "msg_init", 0)          # right-to-left: controls first, then init
+    wire("load_trig", "msg_bang", 1)
+    wire("msg_init", "brain")
+    for bid in ["mode"] + ["ped_" + p[0] for p in PEDALS] + [p[0] for p in play + sound]:
+        wire("msg_bang", bid)
+
+    patcher = {
+        "fileversion": 1,
+        "appversion": {"major": 9, "minor": 0, "revision": 0, "architecture": "x64", "modernui": 1},
+        "classnamespace": "box",
+        "rect": [80.0, 80.0, 1700.0, 900.0],
+        "openrect": [0.0, 0.0, float(DEVICE_W), 169.0],
+        "openinpresentation": 1,
+        "devicewidth": float(DEVICE_W),
+        "default_fontname": "Ableton Sans Medium",
+        "default_fontsize": 10.0,
+        "gridsize": [8.0, 8.0],
+        "editing_bgcolor": [0.32, 0.29, 0.25, 1.0],
+        "description": "Pedal steel guitar: play chords, get steel.",
+        "boxes": boxes,
+        "lines": lines,
+        "dependency_cache": [],
+        "autosave": 0,
+        # Max's project system needs this block (without it: "a project without a name is like a
+        # day without sunshine. fatal."). Copied from a Max-saved device; amxdtype 'iiii' = instrument.
+        "project": {
+            "version": 1, "creationdate": 3871731238, "modificationdate": 3871731238,
+            "viewrect": [0.0, 0.0, 300.0, 500.0], "autoorganize": 1, "hideprojectwindow": 1,
+            "showdependencies": 1, "autolocalize": 0, "contents": {"patchers": {}}, "layout": {},
+            "searchpath": {}, "detailsvisible": 0, "amxdtype": 1768515945, "readonly": 0,
+            "devpathtype": 0, "devpath": ".", "sortmode": 0, "viewmode": 0, "includepackages": 0,
+        },
+    }
+    return {"patcher": patcher}
+
+
+if __name__ == "__main__":
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(here, "m4l", "PedalSteel.maxpat")
+    with open(out, "w") as f:
+        json.dump(build(), f, indent="\t")
+    print(f"Wrote {out}")
