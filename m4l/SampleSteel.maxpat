@@ -2117,7 +2117,7 @@
 						746,
 						26,
 						184,
-						56
+						20
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -2554,6 +2554,171 @@
 						2090,
 						560,
 						42,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "wave",
+					"maxclass": "waveform~",
+					"numinlets": 5,
+					"numoutlets": 6,
+					"outlettype": [
+						"float",
+						"float",
+						"float",
+						"float",
+						"list",
+						"list"
+					],
+					"buffername": "---smp",
+					"labels": 0,
+					"ticks": 0,
+					"vticks": 0,
+					"vlabels": 0,
+					"ignoreclick": 1,
+					"gridcolor": [
+						0,
+						0,
+						0,
+						0
+					],
+					"labeltextcolor": [
+						0,
+						0,
+						0,
+						0
+					],
+					"labelbgcolor": [
+						0,
+						0,
+						0,
+						0
+					],
+					"bgcolor": [
+						0.1,
+						0.1,
+						0.1,
+						1
+					],
+					"waveformcolor": [
+						0.96,
+						0.68,
+						0.34,
+						1
+					],
+					"selectioncolor": [
+						0.96,
+						0.68,
+						0.34,
+						0.25
+					],
+					"annotation_name": "Waveform",
+					"annotation": "The dropped sample. The lit section is the loop (Start to End).",
+					"patching_rect": [
+						1640,
+						740,
+						184,
+						56
+					],
+					"presentation": 1,
+					"presentation_rect": [
+						746,
+						48,
+						184,
+						56
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "len_t",
+					"maxclass": "newobj",
+					"text": "t b b f",
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"bang",
+						"bang",
+						"float"
+					],
+					"patching_rect": [
+						1640,
+						720,
+						49,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "frac_lstart",
+					"maxclass": "newobj",
+					"text": "f",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"outlettype": [
+						"float"
+					],
+					"patching_rect": [
+						1760,
+						800,
+						40,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ms_lstart",
+					"maxclass": "newobj",
+					"text": "* 1.",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"outlettype": [
+						"float"
+					],
+					"patching_rect": [
+						1760,
+						830,
+						40,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "frac_lend",
+					"maxclass": "newobj",
+					"text": "f",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"outlettype": [
+						"float"
+					],
+					"patching_rect": [
+						1760,
+						830,
+						40,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ms_lend",
+					"maxclass": "newobj",
+					"text": "* 1.",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"outlettype": [
+						"float"
+					],
+					"patching_rect": [
+						1760,
+						860,
+						40,
 						22
 					]
 				}
@@ -3439,6 +3604,138 @@
 					],
 					"destination": [
 						"engine",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"smpinfo",
+						6
+					],
+					"destination": [
+						"len_t",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"scale_lstart",
+						0
+					],
+					"destination": [
+						"frac_lstart",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"frac_lstart",
+						0
+					],
+					"destination": [
+						"ms_lstart",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"len_t",
+						2
+					],
+					"destination": [
+						"ms_lstart",
+						1
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ms_lstart",
+						0
+					],
+					"destination": [
+						"wave",
+						2
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"scale_lend",
+						0
+					],
+					"destination": [
+						"frac_lend",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"frac_lend",
+						0
+					],
+					"destination": [
+						"ms_lend",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"len_t",
+						2
+					],
+					"destination": [
+						"ms_lend",
+						1
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ms_lend",
+						0
+					],
+					"destination": [
+						"wave",
+						3
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"len_t",
+						0
+					],
+					"destination": [
+						"frac_lend",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"len_t",
+						1
+					],
+					"destination": [
+						"frac_lstart",
 						0
 					]
 				}

@@ -119,7 +119,7 @@ def sample_card():
            annotation="Drop an audio file here (from Live's browser or Finder). Every string plays it, "
                       "pitched by the Root knob, so pedals bend it and the bar slides it. Single held "
                       "notes work best: a bowed violin, a sung vowel, an organ.",
-           patching_rect=[1640, 520, 184, 56], **bm.pres([746, 26, 184, 56]),
+           patching_rect=[1640, 520, 184, 56], **bm.pres([746, 26, 184, 20]),
            saved_attribute_attributes={"valueof": {
                "parameter_longname": "Sample", "parameter_shortname": "Sample", "parameter_type": 4,
                "parameter_invisible": 1, "parameter_modmode": 0}})
@@ -168,6 +168,25 @@ def sample_card():
         else:
             bm.wire(bid, f"pre_{bid}")
         bm.wire(f"pre_{bid}", "engine")
+
+    # waveform of the dropped sample; the loop Start/End is its selection (ms = fraction * sample length)
+    bm.add(id="wave", maxclass="waveform~", numinlets=5, numoutlets=6, outlettype=["float", "float", "float", "float", "list", "list"],
+           buffername="---smp", labels=0, ticks=0, vticks=0, vlabels=0, ignoreclick=1,
+           gridcolor=[0, 0, 0, 0], labeltextcolor=[0, 0, 0, 0], labelbgcolor=[0, 0, 0, 0],
+           bgcolor=[0.1, 0.1, 0.1, 1], waveformcolor=[0.96, 0.68, 0.34, 1], selectioncolor=[0.96, 0.68, 0.34, 0.25],
+           annotation_name="Waveform", annotation="The dropped sample. The lit section is the loop (Start to End).",
+           patching_rect=[1640, 740, 184, 56], **bm.pres([746, 48, 184, 56]))
+    bm.obj("len_t", "t b b f", 1640, 720, outs=3, outtype=["bang", "bang", "float"])
+    bm.wire("smpinfo", "len_t", 6)           # new sample: length in ms, then re-send both fractions
+    for bid, inlet in (("lstart", 2), ("lend", 3)):
+        bm.obj(f"frac_{bid}", "f", 1760, 740 + inlet * 30, ins=2, outs=1, outtype=["float"])
+        bm.obj(f"ms_{bid}", "* 1.", 1760, 770 + inlet * 30, ins=2, outs=1, outtype=["float"])
+        bm.wire(f"scale_{bid}", f"frac_{bid}")
+        bm.wire(f"frac_{bid}", f"ms_{bid}")
+        bm.wire("len_t", f"ms_{bid}", 2, 1)
+        bm.wire(f"ms_{bid}", "wave", 0, inlet)
+    bm.wire("len_t", "frac_lend", 0)
+    bm.wire("len_t", "frac_lstart", 1)
     return ["drop", "loop"] + [d[0] for d in dials]
 
 

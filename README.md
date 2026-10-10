@@ -89,7 +89,10 @@ behaves like strings that can be re-tuned while they ring.
 PLAY knob) with the ten strings replaced by ten voices playing a sample you drop in. Drop a bowed violin
 and you get a violin that bends and slides like a steel.
 
-![SampleSteel: the PedalSteel controls plus the SAMPLE card](docs/samplesteel.png)
+![SampleSteel: the PedalSteel controls plus the SAMPLE card, showing the sample's waveform with the loop section lit](docs/samplesteel.png)
+
+The SAMPLE card draws the dropped sample's waveform; the lit section is the loop (**Start**–**End**).
+The screenshot uses `docs/sample.wav`, a synthetic bowed-style tone at C3.
 
 1. Drag `SampleSteel.amxd` onto a MIDI track (it needs the two `.js` files next to it, like PedalSteel).
 2. Drop an audio file on **Drop a sample** (from Live's browser or Finder). A single held note works best.
