@@ -4,6 +4,8 @@ A 10-string E9 pedal steel guitar for Ableton Live that you can play without eve
 Play chords on a keyboard; it voices them like a steel player would: one bar position plus pedals
 and knee levers. Change chords legato and the strings **bend** (pedals) or **slide** (bar) into the new chord.
 
+![PedalSteel: neck, bar, pedal board and knobs](docs/pedalsteel.png)
+
 Listen: `docs/demo.wav` (E major → legato A major pedal bend → slide up to C), rendered from the actual engine code.
 
 ## Install
@@ -26,6 +28,8 @@ Knobs: **Bar, Slide** (glide time), **Strum**, **Bend In** (how often chords are
 
 Pedal board: **outlined** = pressed by the voicing for this chord, **solid** = latched by you,
 **solid with a white border** = latched and this chord uses it.
+
+![The bar at fret 5 with pedal A and left knee lever LKL latched; the strings they raise are highlighted](docs/pedalsteel-pedals.png)
 
 ## How it sounds like a steel
 A pedal steel's sound is half the instrument and half the player. Most of what makes it recognisable is
@@ -85,6 +89,8 @@ behaves like strings that can be re-tuned while they ring.
 PLAY knob) with the ten strings replaced by ten voices playing a sample you drop in. Drop a bowed violin
 and you get a violin that bends and slides like a steel.
 
+![SampleSteel: the PedalSteel controls plus the SAMPLE card](docs/samplesteel.png)
+
 1. Drag `SampleSteel.amxd` onto a MIDI track (it needs the two `.js` files next to it, like PedalSteel).
 2. Drop an audio file on **Drop a sample** (from Live's browser or Finder). A single held note works best.
 3. Set **Root** to the note the sample was recorded at (and **Fine** if it sits between notes), then play.
@@ -104,6 +110,8 @@ The brain drives both devices the same way, so every improvement to `steel_brain
 `m4l/InputSteel.amxd` is an **audio effect**: the same brain, neck, pedals and PLAY knobs, but the ten voices
 are the audio coming into the track, each pitch-shifted to its string's note. Sing, play a sax or a guitar
 note, hold chords on a keyboard, and your sound bends and slides into them like a steel.
+
+![InputSteel: the PedalSteel controls plus MIDI From and Dry](docs/inputsteel.png)
 
 1. Drop `InputSteel.amxd` on the track with your instrument (the `.js` files next to it, as for PedalSteel).
 2. Make a MIDI track for the chords and pick it in **MIDI From** on the device (second menu: which tap).
