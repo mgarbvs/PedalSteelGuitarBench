@@ -80,12 +80,48 @@ behaves like strings that can be re-tuned while they ring.
   (a modulated, band-limited feedback loop through a short allpass dispersion chain per side, L/R
   decorrelated) for the amp's metallic "boing", a DC blocker and a soft limiter.
 
+## SampleSteel: any sound as a pedal steel
+`m4l/SampleSteel.amxd` is the same instrument (brain, neck, pedals, bar, legato bends and slides, every
+PLAY knob) with the ten strings replaced by ten voices playing a sample you drop in. Drop a bowed violin
+and you get a violin that bends and slides like a steel.
+
+1. Drag `SampleSteel.amxd` onto a MIDI track (it needs the two `.js` files next to it, like PedalSteel).
+2. Drop an audio file on **Drop a sample** (from Live's browser or Finder). A single held note works best.
+3. Set **Root** to the note the sample was recorded at (and **Fine** if it sits between notes), then play.
+
+| Control | What it does |
+|---|---|
+| **Loop** | On (default): held notes loop the **Start**–**End** section (% of the sample) with a 50 ms equal-power crossfade, so they sustain and bend as long as you hold them. Off: the sample plays once, for plucked or struck sounds. |
+| **Root / Fine** | The sample's pitch. Every voice plays `sample speed = note frequency / Root frequency`, so bends and slides bend the recording. |
+| **Sustain** | How long a held note fades; fully up (the default) never fades. |
+| **Tone** | A low-pass filter, fully open by default. |
+| Swell, Reverb, Volume | As in PedalSteel (same spring reverb and amp). |
+
+The dropped file's path is saved with the Live set and reloads with it. Stereo files play their left channel.
+The brain drives both devices the same way, so every improvement to `steel_brain.js` reaches both.
+
+## InputSteel: your instrument as a pedal steel
+`m4l/InputSteel.amxd` is an **audio effect**: the same brain, neck, pedals and PLAY knobs, but the ten voices
+are the audio coming into the track, each pitch-shifted to its string's note. Sing, play a sax or a guitar
+note, hold chords on a keyboard, and your sound bends and slides into them like a steel.
+
+1. Drop `InputSteel.amxd` on the track with your instrument (the `.js` files next to it, as for PedalSteel).
+2. Make a MIDI track for the chords and pick it in **MIDI From** on the device (second menu: which tap).
+   Set that MIDI track's Monitor to In (or arm it) so your keyboard reaches it.
+3. Play a note into the input and hold chords.
+
+The input's pitch is tracked (Max's `fzero~`), so each voice shifts by *string note ÷ input pitch*: any
+note you play becomes the chord. Tracking wants **one note at a time**; chords or noise into the input
+give wobbly pitch. Each voice is a two-tap delay-line pitch shifter whose window is two input periods,
+so the taps stay in phase and slides don't click. **Dry** mixes the untouched input back in; Sustain
+fully up (the default) lets held notes last as long as the input does.
+
 ## Build
 ```bash
 ./build.sh
 ```
-This runs the tests, generates `m4l/PedalSteel.maxpat` from `scripts/build_maxpat.py` (the source of truth; never hand-edit
-the `.maxpat`/`.amxd`), syntax-checks the gen~ code against Cycling '74's GenExpr grammar, validates it, and packs the `.amxd`.
+This runs the tests, generates `m4l/PedalSteel.maxpat`, `m4l/SampleSteel.maxpat` and `m4l/InputSteel.maxpat` from `scripts/build_maxpat.py` / `build_sampler.py` / `build_input.py` (the source of truth; never hand-edit
+the `.maxpat`/`.amxd`), syntax-checks the gen~ code against Cycling '74's GenExpr grammar, validates them, and packs the `.amxd` files.
 Uses `../MaxForLiveTools/build_amxd.py` and `../NAMMaxInstrument_CombinedOnly/scripts/validate_maxpat.py`.
 
 | File | What |
@@ -93,4 +129,9 @@ Uses `../MaxForLiveTools/build_amxd.py` and `../NAMMaxInstrument_CombinedOnly/sc
 | `m4l/steel_brain.js` | MIDI → voicing solver (bar fret × pedal combos), legato bends/slides, Strings mode |
 | `m4l/steel_neck.js` | jsui: neck, bar, pedal board; mouse picking, bar drag, and momentary pedals |
 | `scripts/build_maxpat.py` | Patch + gen~ engine (10 Karplus-Strong strings with gliding pitch, swell, bar vibrato, amp, reverb) |
+| `scripts/build_sampler.py` | SampleSteel: the same patch via `build_maxpat.build()`, with 10 looping sample voices and the SAMPLE card |
 | `tests/test_engine.js` | Runs the generated gen~ code in Node: tuning (±1 cent), glides, headroom, damping, swell |
+| `scripts/build_input.py` | InputSteel: the same patch as an audio effect, 10 pitch-shifted voices of the input, fzero~ tracking, MIDI From |
+| `tests/test_input.js` | Runs InputSteel's gen~ code with a synthetic input: tuning, input-pitch following, glides, steady sustain, release, Dry, headroom |
+| `tests/test_sampler.js` | Runs SampleSteel's gen~ code with a synthetic sample: tuning, glides, looping, click-free loop seam, one-shot, release |
+| `tests/gen_shim.js` | The GenExpr → JS shim both engine tests share |

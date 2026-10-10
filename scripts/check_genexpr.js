@@ -28,7 +28,7 @@ var bad = 0;
             var calls = b.code.replace(/\/\/.*$/gm, "").replace(/^\s*(Param|History|Delay|Data|Buffer)\b.*$/gm, "").match(/(^|[^.\w])([a-z_]\w*)\s*\(/gi) || [];
             calls.forEach(function (c) {
                 var name = c.replace(/^[^\w]*/, "").replace(/\s*\($/, "");
-                if (!ops[name] && ["if"].indexOf(name) < 0) {
+                if (!ops[name] && ["if", "for", "while"].indexOf(name) < 0) {
                     bad++; console.error("GenExpr unknown operator: " + name);
                 }
             });

@@ -94,9 +94,7 @@ def gen_code():
     import math
     decl = [
         "Param vib(0.25);", "Param sustain(12000);", "Param tone(60);", "Param swell(0);",
-        "Param reverb(30);", "Param volume(0);", "Param volpedal(1);", "Param blockall(0);", "History lastba(0);",
-        "History vibph(0);", "History vibenv(0);", "History volsm(1);", "History revsm(0.3);",
-        "History dcxl(0);", "History dcyl(0);", "History dcxr(0);", "History dcyr(0);",
+        "Param blockall(0);", "History lastba(0);", "History vibph(0);", "History vibenv(0);",
     ]
     for i, o in enumerate(OPEN):
         decl += [
@@ -109,11 +107,8 @@ def gen_code():
             f"History lasts{i}(0);", f"History symlp{i}(0);", f"History symhp{i}(0);",
         ]
     decl.append("History symsum(0);")   # sympathetic-resonance bus: raw sum of last sample's string outputs
-    for side in "lr":
-        decl += [f"Delay rvd{side}(8192);", f"History rvlfo{side}(0);",
-                 f"History rvlp{side}(0);", f"History rvhp{side}(0);"]
-        for j in range(len(SPRING_AP)):
-            decl.append(f"Delay rva{side}{j}(8192);")
+    out_decl, out_body = output_stage()
+    decl += out_decl
 
     body = [
         "sr = samplerate;",
@@ -136,6 +131,24 @@ def gen_code():
     body += [
         "if (plucked) { vibenv = 0; }",
         "symsum = symacc;",   # sympathetic bus: this sample's total, ready for next sample's "other strings" sum
+    ]
+    body += out_body
+    return "\n".join(decl) + "\n" + "\n".join(body) + "\n"
+
+
+def output_stage():
+    """Amp, spring reverb and output limiter: turns the voices' L/R sums into out1/out2 (shared by every engine)."""
+    decl = [
+        "Param reverb(30);", "Param volume(0);", "Param volpedal(1);",
+        "History volsm(1);", "History revsm(0.3);",
+        "History dcxl(0);", "History dcyl(0);", "History dcxr(0);", "History dcyr(0);",
+    ]
+    for side in "lr":
+        decl += [f"Delay rvd{side}(8192);", f"History rvlfo{side}(0);",
+                 f"History rvlp{side}(0);", f"History rvhp{side}(0);"]
+        for j in range(len(SPRING_AP)):
+            decl.append(f"Delay rva{side}{j}(8192);")
+    body = [
         "dryl = tanh(L * 0.7);",           # a clean amp that only breaks up on big strums
         "dryr = tanh(R * 0.7);",
         "rin = (dryl + dryr) * 0.04;",
@@ -175,7 +188,7 @@ def gen_code():
         "out1 = tanh(dcyl);",              # soft limit, never a hard digital clip
         "out2 = tanh(dcyr);",
     ]
-    return "\n".join(decl) + "\n" + "\n".join(body) + "\n"
+    return decl, body
 
 
 # ── Patcher helpers ─────────────────────────────────────────────────────────
@@ -232,7 +245,26 @@ def dial(bid, longname, short, rect, lo, hi, init, unitstyle, info, exponent=1.0
 
 # ── Build ───────────────────────────────────────────────────────────────────
 
-def build():
+SOUND = [
+    ("swell", "Swell", "Swell", 0, 2000, 0, 2, "swell",
+     "Volume-pedal swell on every note: 0 = normal pick attack, higher = notes fade in.", 2.0),
+    ("sustain", "Sustain", "Sustain", 2000, 30000, 12000, 2, "sustain",
+     "How long a held string rings.", 1.0),
+    ("tone", "Tone", "Tone", 0, 100, 60, 5, "tone",
+     "Dark and mellow to bright and glassy.", 1.0),
+    ("reverb", "Reverb", "Reverb", 0, 100, 30, 5, "reverb",
+     "Amp-style room reverb.", 1.0),
+    ("volume", "Volume", "Vol", -40, 6, 0, 4, "volume",
+     "Output level. An expression pedal (CC 11) works as the steel's volume pedal.", 1.0),
+]
+
+
+def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
+          description="Pedal steel guitar: play chords, get steel.", engine_ins=0, amxdtype=1768515945):
+    """extra(): adds device-specific boxes and returns the ids to bang on load.
+    engine_ins: gen~ audio inlets (in 1..n). amxdtype: 'iiii' instrument (default) or 'aaaa' audio effect."""
+    code = code or gen_code()
+    sound = sound or SOUND
     # MIDI in → brain
     obj("thisdev", "live.thisdevice", 20, 20, ins=1, outs=3, outtype=["bang", "int", "int"])
     obj("midiin", "midiin", 20, 60)
@@ -249,14 +281,13 @@ def build():
         wire(p, "brain")
 
     # Engine
-    code = gen_code()
     gen_patcher = {
         "fileversion": 1,
         "appversion": {"major": 9, "minor": 0, "revision": 0, "architecture": "x64", "modernui": 1},
         "classnamespace": "dsp.gen", "rect": [100.0, 100.0, 700.0, 700.0],
         "boxes": [
             {"box": {"id": "code", "maxclass": "codebox", "code": code, "fontface": 0,
-                     "fontname": "<Monospaced>", "fontsize": 12.0, "numinlets": 0, "numoutlets": 2,
+                     "fontname": "<Monospaced>", "fontsize": 12.0, "numinlets": engine_ins, "numoutlets": 2,
                      "outlettype": ["", ""], "patching_rect": [20.0, 20.0, 640.0, 560.0]}},
             {"box": {"id": "out1", "maxclass": "newobj", "text": "out 1", "numinlets": 1, "numoutlets": 0,
                      "patching_rect": [20.0, 600.0, 40.0, 22.0]}},
@@ -268,7 +299,12 @@ def build():
             {"patchline": {"source": ["code", 1], "destination": ["out2", 0]}},
         ],
     }
-    obj("engine", "gen~", 20, 300, ins=1, outs=2, outtype=["signal", "signal"], w=160, patcher=gen_patcher)
+    for i in range(engine_ins):
+        gen_patcher["boxes"].append({"box": {"id": f"in{i + 1}", "maxclass": "newobj", "text": f"in {i + 1}",
+                                             "numinlets": 0, "numoutlets": 1, "outlettype": [""],
+                                             "patching_rect": [20.0 + 60 * i, 0.0, 40.0, 22.0]}})
+        gen_patcher["lines"].append({"patchline": {"source": [f"in{i + 1}", 0], "destination": ["code", i]}})
+    obj("engine", engine_text, 20, 300, ins=max(1, engine_ins), outs=2, outtype=["signal", "signal"], w=160, patcher=gen_patcher)
     obj("plugout", "plugout~", 20, 360, ins=2, outs=0, outtype=[])
     wire("brain", "engine", 0)
     wire("engine", "plugout", 0, 0)
@@ -345,18 +381,6 @@ def build():
     # SOUND card
     panel("sound_card", [480, 84, 256, 78])
     comment("sound_lbl", "SOUND", [486, 86, 60, 18], size=11, bold=True)
-    sound = [
-        ("swell", "Swell", "Swell", 0, 2000, 0, 2, "swell",
-         "Volume-pedal swell on every note: 0 = normal pick attack, higher = notes fade in.", 2.0),
-        ("sustain", "Sustain", "Sustain", 2000, 30000, 12000, 2, "sustain",
-         "How long a held string rings.", 1.0),
-        ("tone", "Tone", "Tone", 0, 100, 60, 5, "tone",
-         "Dark and mellow to bright and glassy.", 1.0),
-        ("reverb", "Reverb", "Reverb", 0, 100, 30, 5, "reverb",
-         "Amp-style room reverb.", 1.0),
-        ("volume", "Volume", "Vol", -40, 6, 0, 4, "volume",
-         "Output level. An expression pedal (CC 11) works as the steel's volume pedal.", 1.0),
-    ]
     for i, (bid, ln, sn, lo, hi, init, us, msg, info, ex) in enumerate(sound):
         dial(bid, ln, sn, [484 + i * 50, 108, 46, 48], lo, hi, init, us, info, ex)
         obj(f"pre_{bid}", f"prepend {msg}", 600 + i * 110, 100)
@@ -365,6 +389,7 @@ def build():
     obj("pre_ring", "prepend ring", 600, 140)   # the brain re-picks sliding strings only once they've faded
     wire("sustain", "pre_ring")
     wire("pre_ring", "brain")
+    extra_bids = extra() if extra else []
 
     # On load: push every control's value, then let the brain draw the neck.
     obj("load_trig", "t b b", 20, 180, ins=1, outs=2, outtype=["bang", "bang"])
@@ -376,7 +401,7 @@ def build():
     wire("load_trig", "msg_init", 0)          # right-to-left: controls first, then init
     wire("load_trig", "msg_bang", 1)
     wire("msg_init", "brain")
-    for bid in ["mode"] + ["ped_" + p[0] for p in PEDALS] + [p[0] for p in play + sound]:
+    for bid in ["mode"] + ["ped_" + p[0] for p in PEDALS] + [p[0] for p in play + sound] + extra_bids:
         wire("msg_bang", bid)
 
     patcher = {
@@ -384,14 +409,14 @@ def build():
         "appversion": {"major": 9, "minor": 0, "revision": 0, "architecture": "x64", "modernui": 1},
         "classnamespace": "box",
         "rect": [80.0, 80.0, 1700.0, 900.0],
-        "openrect": [0.0, 0.0, float(DEVICE_W), 169.0],
+        "openrect": [0.0, 0.0, float(width), 169.0],
         "openinpresentation": 1,
-        "devicewidth": float(DEVICE_W),
+        "devicewidth": float(width),
         "default_fontname": "Ableton Sans Medium",
         "default_fontsize": 10.0,
         "gridsize": [8.0, 8.0],
         "editing_bgcolor": [0.32, 0.29, 0.25, 1.0],
-        "description": "Pedal steel guitar: play chords, get steel.",
+        "description": description,
         "boxes": boxes,
         "lines": lines,
         "dependency_cache": [],
@@ -402,7 +427,7 @@ def build():
             "version": 1, "creationdate": 3871731238, "modificationdate": 3871731238,
             "viewrect": [0.0, 0.0, 300.0, 500.0], "autoorganize": 1, "hideprojectwindow": 1,
             "showdependencies": 1, "autolocalize": 0, "contents": {"patchers": {}}, "layout": {},
-            "searchpath": {}, "detailsvisible": 0, "amxdtype": 1768515945, "readonly": 0,
+            "searchpath": {}, "detailsvisible": 0, "amxdtype": amxdtype, "readonly": 0,
             "devpathtype": 0, "devpath": ".", "sortmode": 0, "viewmode": 0, "includepackages": 0,
         },
     }

@@ -5,63 +5,11 @@ var assert = require("assert");
 var fs = require("fs");
 var path = require("path");
 
-var SR = 48000;
-var maxpat = JSON.parse(fs.readFileSync(path.join(__dirname, "../m4l/PedalSteel.maxpat"), "utf8"));
-var code = maxpat.patcher.boxes.filter(function (b) { return b.box.text === "gen~"; })[0]
-    .box.patcher.boxes.filter(function (b) { return b.box.maxclass === "codebox"; })[0].box.code;
+var G = require("./gen_shim.js"), SR = G.SR, pitchOf = G.pitchOf, rms = G.rms;
+var code = G.loadCode(path.join(__dirname, "../m4l/PedalSteel.maxpat"));
+function Engine() { G.Engine.call(this, code); }
+Engine.prototype = G.Engine.prototype;
 
-function Delay(n) { this.buf = new Float64Array(n); this.i = 0; }
-Delay.prototype.write = function (x) { this.buf[this.i] = x; this.i = (this.i + 1) % this.buf.length; };
-Delay.prototype.read = function (t) { // cubic (Catmull-Rom); t samples ago, t=1 = last write
-    var n = this.buf.length, pos = this.i - t, i1 = Math.floor(pos), fr = pos - i1;
-    function at(k) { return this.buf[((i1 + k) % n + n) % n]; }
-    var y0 = at.call(this, -1), y1 = at.call(this, 0), y2 = at.call(this, 1), y3 = at.call(this, 2);
-    return y1 + 0.5 * fr * (y2 - y0 + fr * (2 * y0 - 5 * y1 + 4 * y2 - y3 + fr * (3 * (y1 - y2) + y3 - y0)));
-};
-
-function Engine() {
-    var seed = 1; // seeded noise: every run renders the same pick, so tests never flake
-    var st = this.st = {
-        samplerate: SR, twopi: 2 * Math.PI, out1: 0, out2: 0,
-        mtof: function (m) { return 440 * Math.pow(2, (m - 69) / 12); },
-        clamp: function (x, a, b) { return Math.min(b, Math.max(a, x)); },
-        wrap: function (x, a, b) { var r = b - a; return x - r * Math.floor((x - a) / r); },
-        noise: function () { seed = (seed * 16807) % 2147483647; return seed / 1073741823.5 - 1; },
-        dbtoa: function (d) { return Math.pow(10, d / 20); },
-        min: Math.min, max: Math.max, sin: Math.sin, cos: Math.cos, exp: Math.exp, tanh: Math.tanh, atan2: Math.atan2
-    };
-    var body = [];
-    code.split("\n").forEach(function (ln) {
-        var m = ln.match(/^(Param|History|Delay) (\w+)\(([^)]*)\);$/);
-        if (!m) return body.push(ln);
-        st[m[2]] = m[1] === "Delay" ? new Delay(+m[3]) : +m[3];
-    });
-    // Every local becomes a state slot so `with` never leaks globals.
-    (body.join("\n").match(/\b[a-zA-Z_]\w*\b/g) || []).forEach(function (id) { if (!(id in st)) st[id] = 0; });
-    this.tick = new Function("st", "with (st) {" + body.join("\n").replace(/interp="cubic"/g, '"cubic"') + "}");
-}
-Engine.prototype.set = function (name, v) { assert(name in this.st, "no gen param " + name); this.st[name] = v; };
-Engine.prototype.run = function (sec) {
-    var n = Math.round(sec * SR), L = new Float64Array(n), R = new Float64Array(n);
-    for (var i = 0; i < n; i++) { this.tick(this.st); L[i] = this.st.out1; R[i] = this.st.out2; }
-    return [L, R];
-};
-
-function pitchOf(x) { // autocorrelation peak with parabolic refinement → MIDI pitch
-    var best = 0, bestLag = 0, c = [];
-    for (var lag = 20; lag < 1200; lag++) {
-        var s = 0;
-        for (var i = 0; i < 8000; i++) s += x[i] * x[i + lag];
-        c[lag] = s;
-    }
-    for (lag = 21; lag < 1199; lag++) if (c[lag] > best && c[lag] > c[lag - 1] && c[lag] >= c[lag + 1]) { best = c[lag]; bestLag = lag; }
-    // take the first peak close to the max (avoids octave errors)
-    for (lag = 21; lag < bestLag; lag++) if (c[lag] > 0.9 * best && c[lag] > c[lag - 1] && c[lag] >= c[lag + 1]) { bestLag = lag; break; }
-    var a = c[bestLag - 1], b = c[bestLag], d = c[bestLag + 1];
-    var p = bestLag + 0.5 * (a - d) / (a - 2 * b + d);
-    return 69 + 12 * Math.log2(SR / p / 440);
-}
-function rms(x, a, b) { var s = 0; for (var i = a; i < b; i++) s += x[i] * x[i]; return Math.sqrt(s / (b - a)); }
 function pluck(e, s, p) { e.set("p" + s, p); e.set("d" + s, 0); e.set("v" + s, 0.8); e.set("k" + s, e.st["k" + s] + 1); }
 
 var DETUNE = [1.5, -1, 0.5, -1.5, 1, -0.5, 1.5, -1, 0.5, -1.5];
