@@ -104,4 +104,36 @@ code.replace(/^Param (\w+)\(/gm, function (_, n) { params[n] = true; });
  "root", "fine", "loop", "lstart", "lend", "smpsr"].forEach(function (n) { assert(params[n], "missing Param " + n); });
 for (var s = 0; s < 10; s++) "pgkvwd".split("").forEach(function (c) { assert(params[c + s], "missing Param " + c + s); });
 
+// 10. Moving the loop End below a ringing note, or dropping a shorter sample under it, never NaNs
+// (a NaN sticks in the filter and reverb and silences the device until it is reloaded).
+[function (e) { e.set("lend", 0.5); }, function (e) { e.st.smp = tone(0.5, 220); }].forEach(function (move) {
+    e = engine(2);
+    pluck(e, 3, 57);
+    e.run(1.5);
+    move(e);
+    e.run(0.5)[0].forEach(function (v) { assert(isFinite(v), "NaN after moving the sample"); });
+    pluck(e, 5, 60);
+    assert(rms(e.run(0.3)[0], SR * 0.1, SR * 0.3) > 0.01, "plays after moving the sample");
+});
+
+// 11. Start at 0 (no room before it): the seam crossfades with the audio after End instead, so it doesn't
+// click. End sits a quarter cycle in, so a hard wrap jumps from a peak to the sample's zero start.
+e = engine(0.5);
+e.set("lstart", 0); e.set("lend", 66.25 * cyc);
+pluck(e, 3, 57);
+x = e.run(2)[0]; maxStep = 0;
+for (i = 1; i < x.length; i++) maxStep = Math.max(maxStep, Math.abs(x[i] - x[i - 1]));
+console.log("loop seam at Start 0: max step " + (maxStep / toneStep).toFixed(2) + "x the tone's own");
+assert(maxStep < 1.3 * toneStep, "loop seam at Start 0 clicks");
+
+// 12. Re-picking a ringing string mid-cycle doesn't click: the old note fades out over 5 ms.
+e = engine(2);
+pluck(e, 3, 57);
+e.run(0.1013);
+pluck(e, 3, 57);
+x = e.run(0.05)[0]; maxStep = 0;
+for (i = 1; i < x.length; i++) maxStep = Math.max(maxStep, Math.abs(x[i] - x[i - 1]));
+console.log("re-pick: max step " + (maxStep / toneStep).toFixed(2) + "x the tone's own");
+assert(maxStep < 1.3 * toneStep, "re-pick clicks");
+
 console.log("sampler: all tests passed");

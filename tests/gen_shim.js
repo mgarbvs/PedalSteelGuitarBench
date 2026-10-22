@@ -34,14 +34,16 @@ function Engine(code) {
         dbtoa: function (d) { return Math.pow(10, d / 20); },
         dim: function (buf) { return buf.length; },
         poke: function (buf, v, idx) { if (idx >= 0 && idx < buf.length) buf[Math.floor(idx)] = v; },
+        mod: function (x, y) { return x % y; }, fract: function (x) { return x - Math.floor(x); }, round: Math.round, exp2: function (x) { return Math.pow(2, x); },
         peek: function (buf, idx) { // interp="spline", boundmode="ignore": 0 outside the buffer
             if (!(idx >= 0 && idx <= buf.length - 1)) return 0;
+            if (idx === Math.floor(idx)) return buf[idx];
             var i1 = Math.floor(idx);
             function at(k) { var j = i1 + k; return j >= 0 && j < buf.length ? buf[j] : 0; }
             return cubic(at(-1), at(0), at(1), at(2), idx - i1);
         },
         min: Math.min, max: Math.max, sin: Math.sin, cos: Math.cos, exp: Math.exp, tanh: Math.tanh,
-        atan2: Math.atan2, sqrt: Math.sqrt, abs: Math.abs, pow: Math.pow
+        atan2: Math.atan2, log: Math.log, sqrt: Math.sqrt, abs: Math.abs, pow: Math.pow
     };
     var body = [];
     code.split("\n").forEach(function (ln) {

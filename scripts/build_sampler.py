@@ -24,22 +24,37 @@ if (left{i} > 0) {{ cur{i} = cur{i} + slope{i}; left{i} = left{i} - 1; if (left{
 if (k{i} != lastk{i}) {{ lastk{i} = k{i}; wait{i} = w{i} * sr / 1000; }}
 if (wait{i} >= 0) {{
     wait{i} = wait{i} - 1;
-    if (wait{i} < 0) {{ pos{i} = 0; amp{i} = v{i} * v{i}; env{i} = swelling ? 0 : 1; plucked = 1; }}
+    if (wait{i} < 0) {{
+        ofade{i} = amp{i} > 0.00001; oamp{i} = amp{i} * env{i} * env{i}; opos{i} = pos{i};   // the ringing note fades out
+        pos{i} = 0; amp{i} = v{i} * v{i}; env{i} = swelling ? 0 : 1; plucked = 1;
+    }}
 }}
-y = 0;
+y = 0; o = 0;
 if (amp{i} > 0.00001) {{
+    inc = mtof(cur{i} + vibamt + {detune}) * ratek;
     y = peek(smp, pos{i}, 0, interp="spline", boundmode="ignore");
     if (xfading && pos{i} > xfstart) {{   // equal-power crossfade into the loop start: no click at the seam
-        fade = (pos{i} - xfstart) / xf;
+        fade = min(1, (pos{i} - xfstart) / xf);   // past End (knob moved, shorter sample): >1 → sqrt NaN → silence
         y = y * sqrt(1 - fade) + peek(smp, pos{i} - ll, 0, interp="spline", boundmode="ignore") * sqrt(fade);
     }}
-    pos{i} = pos{i} + mtof(cur{i} + vibamt + {detune}) * ratek;
-    if (looping && pos{i} >= le) {{ pos{i} = pos{i} - ll; }}
+    if (ofade{i} > 0) {{   // re-picked while ringing: the old note keeps playing under the new one for 5 ms
+        o = peek(smp, opos{i}, 0, interp="spline", boundmode="ignore");
+        if (xfading && opos{i} > xfstart) {{
+            fade = min(1, (opos{i} - xfstart) / xf);
+            o = o * sqrt(1 - fade) + peek(smp, opos{i} - ll, 0, interp="spline", boundmode="ignore") * sqrt(fade);
+        }}
+        o = o * oamp{i} * ofade{i};
+        opos{i} = opos{i} + inc;
+        if (looping && opos{i} >= lw) {{ opos{i} = opos{i} - ll; }}
+        ofade{i} = ofade{i} - ofinc;
+    }}
+    pos{i} = pos{i} + inc;
+    if (looping && pos{i} >= lw) {{ pos{i} = pos{i} - ll; }}
     if (pos{i} >= len) {{ amp{i} = 0; }}   // one-shot: the note ends with the sample
     amp{i} = amp{i} * (d{i} > 0 ? relk : susk);
 }}
 env{i} = swelling ? min(1, env{i} + swinc) : 1;
-s = y * amp{i} * env{i} * env{i} * {gain};
+s = (y * amp{i} * env{i} * env{i} + o) * {gain};
 L = L + s * {gl};
 R = R + s * {gr};
 """
@@ -61,13 +76,14 @@ def gen_code():
             f"History cur{i}({o});", f"History last{i}({o});", f"History slope{i}(0);", f"History left{i}(0);",
             f"History lastk{i}(0);", f"History wait{i}(-1);", f"History env{i}(1);",
             f"History pos{i}(0);", f"History amp{i}(0);",
+            f"History opos{i}(0);", f"History oamp{i}(0);", f"History ofade{i}(0);",
         ]
     out_decl, out_body = bm.output_stage()
     decl += out_decl
 
     body = [
         "sr = samplerate;",
-        "n = 0; y = 0; s = 0; fade = 0; plucked = 0; L = 0; R = 0;",
+        "n = 0; y = 0; o = 0; inc = 0; s = 0; fade = 0; plucked = 0; L = 0; R = 0;",
         "vibph = wrap(vibph + 5.5 / sr, 0, 1);",
         "vibenv = min(1, vibenv + 1 / (0.7 * sr));",
         "vibamt = sin(vibph * twopi) * vib * 0.3 * vibenv;",   # bar vibrato, up to ±0.3 semitone
@@ -79,9 +95,14 @@ def gen_code():
         "le = max(lstart, lend) * len;",
         "ll = le - ls;",
         "looping = loop > 0.5 && ll > 100;",
-        "xf = min(min(ll * 0.5, ls), 0.05 * smpsr);",          # up to 50 ms, never before the sample start
+        "xfcap = min(ll * 0.5, 0.05 * smpsr);",                # up to 50 ms
+        "xfpre = min(xfcap, ls);",                             # room before Start: fade End into the audio before it
+        "xfpost = min(xfcap, len - le);",                      # none (Start at 0): fade the audio after End into Start
+        "xf = max(xfpre, xfpost);",
         "xfading = looping && xf >= 1;",
-        "xfstart = le - xf;",
+        "lw = xfpost > xfpre ? le + xf : le;",                 # wrap point: past End when the fade uses the audio after it
+        "xfstart = lw - xf;",
+        "ofinc = 1 / (0.005 * sr);",                           # re-pick: the old note fades out in 5 ms
         "relk = exp(-6.9078 / (0.15 * sr));",                  # key up: 60 dB down in 150 ms
         "susk = sustain >= 29999 ? 1 : exp(-6.9078 / (sustain * sr / 1000));",   # fully up = never fades
     ]
@@ -123,11 +144,13 @@ def sample_card():
            saved_attribute_attributes={"valueof": {
                "parameter_longname": "Sample", "parameter_shortname": "Sample", "parameter_type": 4,
                "parameter_invisible": 1, "parameter_modmode": 0}})
+    bm.obj("skip_none", "route none", 1640, 580, ins=2, outs=2, outtype=["", ""])   # empty drop banged on load says "none"
     bm.obj("pre_replace", "prepend replace", 1640, 600)
     bm.obj("smpbuf", "buffer~ ---smp", 1640, 630, ins=1, outs=2, outtype=["float", "bang"])
     bm.obj("smpinfo", "info~ ---smp", 1640, 660, ins=2, outs=10)
     bm.obj("pre_smpsr", "prepend smpsr", 1640, 690)
-    bm.wire("drop", "pre_replace")
+    bm.wire("drop", "skip_none")
+    bm.wire("skip_none", "pre_replace", 1)
     bm.wire("pre_replace", "smpbuf")
     bm.wire("smpbuf", "smpinfo", 1)          # file read done → report its sample rate
     bm.wire("smpinfo", "pre_smpsr", 0)
