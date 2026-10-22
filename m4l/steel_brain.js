@@ -295,7 +295,8 @@ function evaluate(fret, m, required, old, ctx) {
         for (s = 0; s < 10; s++) {
             if (taken[s] || pitch[s] !== n) continue;
             var sc = 10;                    // a fresh string
-            if (owner[s] >= 0 && ctx.glide) sc = Math.abs(n - old[owner[s]].n); // ringing string glides
+            // ringing string glides; same note again is a re-pick, not a slide
+            if (owner[s] >= 0 && ctx.glide && old[owner[s]].n !== n) sc = Math.abs(n - old[owner[s]].n);
             if (sc < bestScore) { bestScore = sc; best = s; }
         }
         if (best < 0) { uncovered.push(i); continue; }

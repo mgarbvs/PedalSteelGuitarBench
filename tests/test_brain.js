@@ -58,6 +58,26 @@ out = [];
 assert.strictEqual(B.S.bar, 1, "slid up a fret");
 assert.strictEqual(plucks().length, 0, "held strings slide without a re-pick");
 
+// 2d. Re-striking the same notes right after release (staccato) is a new pick, not a 0-semitone slide.
+fresh();
+clock = 0;
+B.S.now = function () { return clock; };
+play([59, 64, 68]);
+[59, 64, 68].forEach(function (n) { B.noteoff(n); }); flush();
+clock = 30;
+out = [];
+play([59, 64, 68]);
+assert.strictEqual(plucks().length, 3, "re-struck chord is re-picked");
+fresh();
+clock = 0;
+B.S.now = function () { return clock; };
+play([64]);
+B.noteoff(64); flush();
+clock += 30;
+out = [];
+play([64]);
+assert.strictEqual(plucks().length, 1, "re-struck note is re-picked");
+
 // 3. Every chord the player can throw at it sounds, with no wrong notes.
 var seed = 1;
 function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
