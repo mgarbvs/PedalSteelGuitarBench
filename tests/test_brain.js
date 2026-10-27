@@ -149,7 +149,7 @@ B.noteoff(36);
 assert.strictEqual(B.target(9), 47);
 B.bar(3);
 assert.strictEqual(B.target(9), 50);
-B.bend(127);
+B.bend(1);
 assert(Math.abs(B.target(9) - 52) < 0.01);
 
 // 9b. A latched pedal the chord actually bends is reported as 3 (bordered), an unused one as 2.
@@ -174,10 +174,42 @@ assert.strictEqual(B.target(4), 61, "string 5 raised by A is exact");
 B.pedal("A", 0); B.pedal("B", 0);
 assert.strictEqual(B.target(3), 64, "no pedals, no drop");
 
+// 9d. MPE: each note's channel bends, swells and brightens only its own string(s).
+fresh();
+B.chan(2); B.note(64, 100);
+B.chan(3); B.note(68, 100);
+flush();
+var e4 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (s) { return B.S.str[s].note === 64; })[0];
+var g4 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (s) { return B.S.str[s].note === 68; })[0];
+B.chan(2); B.bend(2 / 48);   // +2 semitones on E4's channel
+assert(Math.abs(B.target(e4) - 66) < 0.01, "E4 string bent up a whole step");
+assert(sounding(68), "G#4 untouched");
+B.touch(127); B.cc(74, 0);
+assert.strictEqual(B.S.str[e4].gain, 1);
+assert.strictEqual(B.S.str[e4].tilt, 0);
+assert.strictEqual(B.S.str[g4].tilt, 0.5, "other string's brightness untouched");
+B.noteoff(64);
+B.bend(0);                   // channel 2 after release: the released string keeps its bend
+assert(Math.abs(B.target(e4) - 66) < 0.01, "released string frozen");
+B.chan(1); B.note(64, 100); flush();   // plain channel-1 note: no MPE expression
+var e4b = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(function (s) { return B.S.str[s].note === 64; })[0];
+assert(sounding(64) && B.S.str[e4b].tilt === 0.5 && B.S.str[e4b].mpe === 0, "channel 1 note is plain");
+
+// 9e. MPE switch off: sounding strings go plain, and channel 2..16 bends move the bar like channel 1.
+fresh();
+B.chan(2); B.note(64, 100); flush();
+B.bend(2 / 48); B.touch(0);
+B.mpe(0);
+assert(sounding(64), "MPE off: bend dropped");
+B.chan(2); B.bend(0.5);
+assert.strictEqual(B.S.bendFrets, 1, "MPE off: channel 2 bend moves the bar");
+B.touch(0);
+assert([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].every(function (s) { return B.S.str[s].gain === 1; }), "MPE off: no pressure");
+
 // 10. Gen messages are well formed: name + number.
 out.forEach(function (m) {
     if (m[0] !== 0) return;
-    assert(/^([pgvwkd]\d|vib|volpedal|blockall)$/.test(m[1]), "bad gen message " + m[1]);
+    assert(/^([pgvwkdxt]\d|vib|volpedal|blockall)$/.test(m[1]), "bad gen message " + m[1]);
     assert(typeof m[2] === "number" && isFinite(m[2]), "bad value " + m);
 });
 

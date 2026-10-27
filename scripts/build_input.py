@@ -42,6 +42,7 @@ if (amp{i} > 0.00001) {{
 }}
 env{i} = swelling ? min(1, env{i} + swinc) : 1;
 s = y * amp{i} * env{i} * env{i} * {gain};
+{expr}
 L = L + s * {gl};
 R = R + s * {gr};
 """
@@ -63,7 +64,7 @@ def gen_code():
             f"History cur{i}({o});", f"History last{i}({o});", f"History slope{i}(0);", f"History left{i}(0);",
             f"History lastk{i}(0);", f"History wait{i}(-1);", f"History env{i}(1);",
             f"History amp{i}(0);", f"History ph{i}(0);",
-        ]
+        ] + bm.expr_decl(i)
     out_decl, out_body = bm.output_stage()
     decl += out_decl
 
@@ -84,7 +85,7 @@ def gen_code():
     ]
     for i in range(10):
         theta = (0.5 + 0.3 * (4.5 - i) / 4.5) * math.pi / 2     # string 1 right, string 10 left
-        body.append(VOICE.format(i=i, detune=bm.DETUNE_CENTS[i] / 100, gain=VOICE_GAIN,
+        body.append(VOICE.format(i=i, expr=bm.EXPR.format(i=i), detune=bm.DETUNE_CENTS[i] / 100, gain=VOICE_GAIN,
                                  gl=round(math.cos(theta), 4), gr=round(math.sin(theta), 4)))
     body += [
         "if (plucked) { vibenv = 0; }",

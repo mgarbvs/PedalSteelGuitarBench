@@ -21,7 +21,14 @@ The `.js` files must stay next to the `.amxd`.
 | Legato | Hold notes into the next chord → bends and slides | — |
 
 In both modes: pitch bend slides the bar ±2 frets, mod wheel adds vibrato, CC 64 sustains, and CC 11 is the volume pedal.
+
+**MPE** (Push 3, Seaboard, Linnstrument…): each note's own pitch bend bends just its string(s) (±48 semitones,
+the MPE default), pressure swells that string's level, and slide (CC 74) makes it darker or brighter.
+Channel 1 stays global, so ordinary keyboards play exactly as before.
 Click any string on the display to pick it.
+
+On Push the encoders page through **Play** (Bar, Slide, Strum, Bend In, Vibrato, Mode), **Sound**, and **Pedals**
+(each pedal and knee lever shows Off/On; turn one to latch it). SampleSteel adds a **Sample** page.
 
 Knobs: **Bar, Slide** (glide time), **Strum**, **Bend In** (how often chords are picked unpedaled then bent up: the steel "cry"),
 **Vibrato**, **Swell** (volume-pedal fade-in per note), **Sustain, Tone, Reverb, Volume**. Every control has Info View help.

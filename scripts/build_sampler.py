@@ -55,6 +55,7 @@ if (amp{i} > 0.00001) {{
 }}
 env{i} = swelling ? min(1, env{i} + swinc) : 1;
 s = (y * amp{i} * env{i} * env{i} + o) * {gain};
+{expr}
 L = L + s * {gl};
 R = R + s * {gr};
 """
@@ -77,7 +78,7 @@ def gen_code():
             f"History lastk{i}(0);", f"History wait{i}(-1);", f"History env{i}(1);",
             f"History pos{i}(0);", f"History amp{i}(0);",
             f"History opos{i}(0);", f"History oamp{i}(0);", f"History ofade{i}(0);",
-        ]
+        ] + bm.expr_decl(i)
     out_decl, out_body = bm.output_stage()
     decl += out_decl
 
@@ -108,7 +109,7 @@ def gen_code():
     ]
     for i in range(10):
         theta = (0.5 + 0.3 * (4.5 - i) / 4.5) * math.pi / 2     # string 1 right, string 10 left
-        body.append(VOICE.format(i=i, detune=bm.DETUNE_CENTS[i] / 100, gain=VOICE_GAIN,
+        body.append(VOICE.format(i=i, expr=bm.EXPR.format(i=i), detune=bm.DETUNE_CENTS[i] / 100, gain=VOICE_GAIN,
                                  gl=round(math.cos(theta), 4), gr=round(math.sin(theta), 4)))
     body += [
         "if (plucked) { vibenv = 0; }",
@@ -167,7 +168,7 @@ def sample_card():
                "parameter_enum": ["Off", "On"], "parameter_mmax": 1,
                "parameter_initial_enable": 1, "parameter_initial": [1]}})
     bm.obj("pre_loop", "prepend loop", 1760, 540)
-    bm.wire("loop", "pre_loop")
+    bm.wire(bm.push_toggle("loop"), "pre_loop")
     bm.wire("pre_loop", "engine")
 
     dials = [
@@ -210,12 +211,12 @@ def sample_card():
         bm.wire(f"ms_{bid}", "wave", 0, inlet)
     bm.wire("len_t", "frac_lend", 0)
     bm.wire("len_t", "frac_lstart", 1)
-    return ["drop", "loop"] + [d[0] for d in dials]
+    return ["drop", "loop_menu"] + [d[0] for d in dials]
 
 
 def build():
     return bm.build(code=gen_code(), sound=SOUND, width=DEVICE_W, engine_text="gen~ @smp ---smp",
-                    extra=sample_card,
+                    extra=sample_card, extra_bank="Sample",
                     description="Pedal steel playing any sample: drop in a sound, play chords, get steel.")
 
 

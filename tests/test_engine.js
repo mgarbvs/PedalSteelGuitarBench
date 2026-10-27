@@ -105,6 +105,22 @@ for (i = 0; i < more.length; i++) { if (!isFinite(more[i])) stable = false; peak
 assert(stable && peak10 < 1, "coupling stays bounded with every string open");
 assert(rms(more, SR * 8, SR * 9) < early, "and still decays");
 
+// MPE: pressure (x) scales a string's level, slide (t) tilts its brightness; defaults are flat.
+function mpeRun(x, t) {
+    var e = new Engine();
+    e.set("reverb", 0); e.set("vib", 0); e.set("x3", x); e.set("t3", t);
+    pluck(e, 3, 64);
+    var o = e.run(0.4)[0].subarray(SR * 0.1);
+    var hi = new Float32Array(o.length - 1);
+    for (var j = 1; j < o.length; j++) hi[j - 1] = o[j] - o[j - 1];   // first difference: high-band energy
+    return { lvl: rms(o, 0, o.length), bright: rms(hi, 0, hi.length) / rms(o, 0, o.length) };
+}
+var flat = mpeRun(1, 0.5), soft = mpeRun(0.35, 0.5), dark = mpeRun(1, 0), bright = mpeRun(1, 1);
+console.log("mpe: soft " + (soft.lvl / flat.lvl).toFixed(2) + "x level, brightness dark/flat/bright " +
+            [dark, flat, bright].map(function (r) { return r.bright.toFixed(3); }).join("/"));
+assert(Math.abs(soft.lvl / flat.lvl - 0.35) < 0.05, "pressure scales level");
+assert(dark.bright < flat.bright && flat.bright < bright.bright, "slide tilts brightness");
+
 console.log("engine: all tests passed");
 
 // Optional demo: E major → legato A major (pedal bend) → slide up to fret 3, through the brain.

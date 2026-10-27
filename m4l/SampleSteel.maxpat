@@ -79,7 +79,7 @@
 				"box": {
 					"id": "midiparse",
 					"maxclass": "newobj",
-					"text": "midiparse",
+					"text": "midiparse @hires 1",
 					"numinlets": 1,
 					"numoutlets": 8,
 					"outlettype": [
@@ -95,7 +95,7 @@
 					"patching_rect": [
 						20,
 						90,
-						63,
+						126,
 						22
 					]
 				}
@@ -175,6 +175,42 @@
 			},
 			{
 				"box": {
+					"id": "pre_touch",
+					"maxclass": "newobj",
+					"text": "prepend touch",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						350,
+						130,
+						91,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "pre_chan",
+					"maxclass": "newobj",
+					"text": "prepend chan",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						460,
+						130,
+						84,
+						22
+					]
+				}
+			},
+			{
+				"box": {
 					"id": "engine",
 					"maxclass": "newobj",
 					"text": "gen~ @smp ---smp",
@@ -211,7 +247,7 @@
 								"box": {
 									"id": "code",
 									"maxclass": "codebox",
-									"code": "Param vib(0.25);\nParam sustain(30000);\nParam tone(100);\nParam swell(0);\nParam blockall(0);\nParam root(60);\nParam fine(0);\nParam loop(1);\nParam lstart(0.3);\nParam lend(0.9);\nParam smpsr(44100);\nBuffer smp(\"smp\");\nHistory vibph(0);\nHistory vibenv(0);\nHistory tlpl(0);\nHistory tlpr(0);\nParam p0(66);\nParam g0(0);\nParam k0(0);\nParam v0(0.8);\nParam w0(0);\nParam d0(1);\nHistory cur0(66);\nHistory last0(66);\nHistory slope0(0);\nHistory left0(0);\nHistory lastk0(0);\nHistory wait0(-1);\nHistory env0(1);\nHistory pos0(0);\nHistory amp0(0);\nHistory opos0(0);\nHistory oamp0(0);\nHistory ofade0(0);\nParam p1(63);\nParam g1(0);\nParam k1(0);\nParam v1(0.8);\nParam w1(0);\nParam d1(1);\nHistory cur1(63);\nHistory last1(63);\nHistory slope1(0);\nHistory left1(0);\nHistory lastk1(0);\nHistory wait1(-1);\nHistory env1(1);\nHistory pos1(0);\nHistory amp1(0);\nHistory opos1(0);\nHistory oamp1(0);\nHistory ofade1(0);\nParam p2(68);\nParam g2(0);\nParam k2(0);\nParam v2(0.8);\nParam w2(0);\nParam d2(1);\nHistory cur2(68);\nHistory last2(68);\nHistory slope2(0);\nHistory left2(0);\nHistory lastk2(0);\nHistory wait2(-1);\nHistory env2(1);\nHistory pos2(0);\nHistory amp2(0);\nHistory opos2(0);\nHistory oamp2(0);\nHistory ofade2(0);\nParam p3(64);\nParam g3(0);\nParam k3(0);\nParam v3(0.8);\nParam w3(0);\nParam d3(1);\nHistory cur3(64);\nHistory last3(64);\nHistory slope3(0);\nHistory left3(0);\nHistory lastk3(0);\nHistory wait3(-1);\nHistory env3(1);\nHistory pos3(0);\nHistory amp3(0);\nHistory opos3(0);\nHistory oamp3(0);\nHistory ofade3(0);\nParam p4(59);\nParam g4(0);\nParam k4(0);\nParam v4(0.8);\nParam w4(0);\nParam d4(1);\nHistory cur4(59);\nHistory last4(59);\nHistory slope4(0);\nHistory left4(0);\nHistory lastk4(0);\nHistory wait4(-1);\nHistory env4(1);\nHistory pos4(0);\nHistory amp4(0);\nHistory opos4(0);\nHistory oamp4(0);\nHistory ofade4(0);\nParam p5(56);\nParam g5(0);\nParam k5(0);\nParam v5(0.8);\nParam w5(0);\nParam d5(1);\nHistory cur5(56);\nHistory last5(56);\nHistory slope5(0);\nHistory left5(0);\nHistory lastk5(0);\nHistory wait5(-1);\nHistory env5(1);\nHistory pos5(0);\nHistory amp5(0);\nHistory opos5(0);\nHistory oamp5(0);\nHistory ofade5(0);\nParam p6(54);\nParam g6(0);\nParam k6(0);\nParam v6(0.8);\nParam w6(0);\nParam d6(1);\nHistory cur6(54);\nHistory last6(54);\nHistory slope6(0);\nHistory left6(0);\nHistory lastk6(0);\nHistory wait6(-1);\nHistory env6(1);\nHistory pos6(0);\nHistory amp6(0);\nHistory opos6(0);\nHistory oamp6(0);\nHistory ofade6(0);\nParam p7(52);\nParam g7(0);\nParam k7(0);\nParam v7(0.8);\nParam w7(0);\nParam d7(1);\nHistory cur7(52);\nHistory last7(52);\nHistory slope7(0);\nHistory left7(0);\nHistory lastk7(0);\nHistory wait7(-1);\nHistory env7(1);\nHistory pos7(0);\nHistory amp7(0);\nHistory opos7(0);\nHistory oamp7(0);\nHistory ofade7(0);\nParam p8(50);\nParam g8(0);\nParam k8(0);\nParam v8(0.8);\nParam w8(0);\nParam d8(1);\nHistory cur8(50);\nHistory last8(50);\nHistory slope8(0);\nHistory left8(0);\nHistory lastk8(0);\nHistory wait8(-1);\nHistory env8(1);\nHistory pos8(0);\nHistory amp8(0);\nHistory opos8(0);\nHistory oamp8(0);\nHistory ofade8(0);\nParam p9(47);\nParam g9(0);\nParam k9(0);\nParam v9(0.8);\nParam w9(0);\nParam d9(1);\nHistory cur9(47);\nHistory last9(47);\nHistory slope9(0);\nHistory left9(0);\nHistory lastk9(0);\nHistory wait9(-1);\nHistory env9(1);\nHistory pos9(0);\nHistory amp9(0);\nHistory opos9(0);\nHistory oamp9(0);\nHistory ofade9(0);\nParam reverb(30);\nParam volume(0);\nParam volpedal(1);\nHistory volsm(1);\nHistory revsm(0.3);\nHistory dcxl(0);\nHistory dcyl(0);\nHistory dcxr(0);\nHistory dcyr(0);\nDelay rvdl(8192);\nHistory rvlfol(0);\nHistory rvlpl(0);\nHistory rvhpl(0);\nDelay rval0(8192);\nDelay rval1(8192);\nDelay rval2(8192);\nDelay rval3(8192);\nDelay rval4(8192);\nDelay rval5(8192);\nDelay rvdr(8192);\nHistory rvlfor(0);\nHistory rvlpr(0);\nHistory rvhpr(0);\nDelay rvar0(8192);\nDelay rvar1(8192);\nDelay rvar2(8192);\nDelay rvar3(8192);\nDelay rvar4(8192);\nDelay rvar5(8192);\nsr = samplerate;\nn = 0; y = 0; o = 0; inc = 0; s = 0; fade = 0; plucked = 0; L = 0; R = 0;\nvibph = wrap(vibph + 5.5 / sr, 0, 1);\nvibenv = min(1, vibenv + 1 / (0.7 * sr));\nvibamt = sin(vibph * twopi) * vib * 0.3 * vibenv;\nswelling = swell > 1;\nswinc = 1 / max(1, swell * sr / 1000);\nlen = dim(smp);\nratek = smpsr / sr / mtof(root + fine / 100);\nls = min(lstart, lend) * len;\nle = max(lstart, lend) * len;\nll = le - ls;\nlooping = loop > 0.5 && ll > 100;\nxfcap = min(ll * 0.5, 0.05 * smpsr);\nxfpre = min(xfcap, ls);\nxfpost = min(xfcap, len - le);\nxf = max(xfpre, xfpost);\nxfading = looping && xf >= 1;\nlw = xfpost > xfpre ? le + xf : le;\nxfstart = lw - xf;\nofinc = 1 / (0.005 * sr);\nrelk = exp(-6.9078 / (0.15 * sr));\nsusk = sustain >= 29999 ? 1 : exp(-6.9078 / (sustain * sr / 1000));\n\n// voice 0\nif (p0 != last0) { n = max(1, g0 * sr / 1000); slope0 = (p0 - cur0) / n; left0 = n; last0 = p0; }\nif (left0 > 0) { cur0 = cur0 + slope0; left0 = left0 - 1; if (left0 <= 0) { cur0 = last0; } }\nif (k0 != lastk0) { lastk0 = k0; wait0 = w0 * sr / 1000; }\nif (wait0 >= 0) {\n    wait0 = wait0 - 1;\n    if (wait0 < 0) {\n        ofade0 = amp0 > 0.00001; oamp0 = amp0 * env0 * env0; opos0 = pos0;   // the ringing note fades out\n        pos0 = 0; amp0 = v0 * v0; env0 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp0 > 0.00001) {\n    inc = mtof(cur0 + vibamt + 0.015) * ratek;\n    y = peek(smp, pos0, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos0 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos0 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos0 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade0 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos0, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos0 > xfstart) {\n            fade = min(1, (opos0 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos0 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp0 * ofade0;\n        opos0 = opos0 + inc;\n        if (looping && opos0 >= lw) { opos0 = opos0 - ll; }\n        ofade0 = ofade0 - ofinc;\n    }\n    pos0 = pos0 + inc;\n    if (looping && pos0 >= lw) { pos0 = pos0 - ll; }\n    if (pos0 >= len) { amp0 = 0; }   // one-shot: the note ends with the sample\n    amp0 = amp0 * (d0 > 0 ? relk : susk);\n}\nenv0 = swelling ? min(1, env0 + swinc) : 1;\ns = (y * amp0 * env0 * env0 + o) * 0.35;\nL = L + s * 0.309;\nR = R + s * 0.9511;\n\n\n// voice 1\nif (p1 != last1) { n = max(1, g1 * sr / 1000); slope1 = (p1 - cur1) / n; left1 = n; last1 = p1; }\nif (left1 > 0) { cur1 = cur1 + slope1; left1 = left1 - 1; if (left1 <= 0) { cur1 = last1; } }\nif (k1 != lastk1) { lastk1 = k1; wait1 = w1 * sr / 1000; }\nif (wait1 >= 0) {\n    wait1 = wait1 - 1;\n    if (wait1 < 0) {\n        ofade1 = amp1 > 0.00001; oamp1 = amp1 * env1 * env1; opos1 = pos1;   // the ringing note fades out\n        pos1 = 0; amp1 = v1 * v1; env1 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp1 > 0.00001) {\n    inc = mtof(cur1 + vibamt + -0.01) * ratek;\n    y = peek(smp, pos1, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos1 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos1 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos1 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade1 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos1, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos1 > xfstart) {\n            fade = min(1, (opos1 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos1 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp1 * ofade1;\n        opos1 = opos1 + inc;\n        if (looping && opos1 >= lw) { opos1 = opos1 - ll; }\n        ofade1 = ofade1 - ofinc;\n    }\n    pos1 = pos1 + inc;\n    if (looping && pos1 >= lw) { pos1 = pos1 - ll; }\n    if (pos1 >= len) { amp1 = 0; }   // one-shot: the note ends with the sample\n    amp1 = amp1 * (d1 > 0 ? relk : susk);\n}\nenv1 = swelling ? min(1, env1 + swinc) : 1;\ns = (y * amp1 * env1 * env1 + o) * 0.35;\nL = L + s * 0.4067;\nR = R + s * 0.9135;\n\n\n// voice 2\nif (p2 != last2) { n = max(1, g2 * sr / 1000); slope2 = (p2 - cur2) / n; left2 = n; last2 = p2; }\nif (left2 > 0) { cur2 = cur2 + slope2; left2 = left2 - 1; if (left2 <= 0) { cur2 = last2; } }\nif (k2 != lastk2) { lastk2 = k2; wait2 = w2 * sr / 1000; }\nif (wait2 >= 0) {\n    wait2 = wait2 - 1;\n    if (wait2 < 0) {\n        ofade2 = amp2 > 0.00001; oamp2 = amp2 * env2 * env2; opos2 = pos2;   // the ringing note fades out\n        pos2 = 0; amp2 = v2 * v2; env2 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp2 > 0.00001) {\n    inc = mtof(cur2 + vibamt + 0.005) * ratek;\n    y = peek(smp, pos2, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos2 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos2 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos2 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade2 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos2, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos2 > xfstart) {\n            fade = min(1, (opos2 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos2 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp2 * ofade2;\n        opos2 = opos2 + inc;\n        if (looping && opos2 >= lw) { opos2 = opos2 - ll; }\n        ofade2 = ofade2 - ofinc;\n    }\n    pos2 = pos2 + inc;\n    if (looping && pos2 >= lw) { pos2 = pos2 - ll; }\n    if (pos2 >= len) { amp2 = 0; }   // one-shot: the note ends with the sample\n    amp2 = amp2 * (d2 > 0 ? relk : susk);\n}\nenv2 = swelling ? min(1, env2 + swinc) : 1;\ns = (y * amp2 * env2 * env2 + o) * 0.35;\nL = L + s * 0.5;\nR = R + s * 0.866;\n\n\n// voice 3\nif (p3 != last3) { n = max(1, g3 * sr / 1000); slope3 = (p3 - cur3) / n; left3 = n; last3 = p3; }\nif (left3 > 0) { cur3 = cur3 + slope3; left3 = left3 - 1; if (left3 <= 0) { cur3 = last3; } }\nif (k3 != lastk3) { lastk3 = k3; wait3 = w3 * sr / 1000; }\nif (wait3 >= 0) {\n    wait3 = wait3 - 1;\n    if (wait3 < 0) {\n        ofade3 = amp3 > 0.00001; oamp3 = amp3 * env3 * env3; opos3 = pos3;   // the ringing note fades out\n        pos3 = 0; amp3 = v3 * v3; env3 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp3 > 0.00001) {\n    inc = mtof(cur3 + vibamt + -0.015) * ratek;\n    y = peek(smp, pos3, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos3 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos3 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos3 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade3 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos3, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos3 > xfstart) {\n            fade = min(1, (opos3 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos3 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp3 * ofade3;\n        opos3 = opos3 + inc;\n        if (looping && opos3 >= lw) { opos3 = opos3 - ll; }\n        ofade3 = ofade3 - ofinc;\n    }\n    pos3 = pos3 + inc;\n    if (looping && pos3 >= lw) { pos3 = pos3 - ll; }\n    if (pos3 >= len) { amp3 = 0; }   // one-shot: the note ends with the sample\n    amp3 = amp3 * (d3 > 0 ? relk : susk);\n}\nenv3 = swelling ? min(1, env3 + swinc) : 1;\ns = (y * amp3 * env3 * env3 + o) * 0.35;\nL = L + s * 0.5878;\nR = R + s * 0.809;\n\n\n// voice 4\nif (p4 != last4) { n = max(1, g4 * sr / 1000); slope4 = (p4 - cur4) / n; left4 = n; last4 = p4; }\nif (left4 > 0) { cur4 = cur4 + slope4; left4 = left4 - 1; if (left4 <= 0) { cur4 = last4; } }\nif (k4 != lastk4) { lastk4 = k4; wait4 = w4 * sr / 1000; }\nif (wait4 >= 0) {\n    wait4 = wait4 - 1;\n    if (wait4 < 0) {\n        ofade4 = amp4 > 0.00001; oamp4 = amp4 * env4 * env4; opos4 = pos4;   // the ringing note fades out\n        pos4 = 0; amp4 = v4 * v4; env4 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp4 > 0.00001) {\n    inc = mtof(cur4 + vibamt + 0.01) * ratek;\n    y = peek(smp, pos4, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos4 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos4 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos4 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade4 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos4, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos4 > xfstart) {\n            fade = min(1, (opos4 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos4 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp4 * ofade4;\n        opos4 = opos4 + inc;\n        if (looping && opos4 >= lw) { opos4 = opos4 - ll; }\n        ofade4 = ofade4 - ofinc;\n    }\n    pos4 = pos4 + inc;\n    if (looping && pos4 >= lw) { pos4 = pos4 - ll; }\n    if (pos4 >= len) { amp4 = 0; }   // one-shot: the note ends with the sample\n    amp4 = amp4 * (d4 > 0 ? relk : susk);\n}\nenv4 = swelling ? min(1, env4 + swinc) : 1;\ns = (y * amp4 * env4 * env4 + o) * 0.35;\nL = L + s * 0.6691;\nR = R + s * 0.7431;\n\n\n// voice 5\nif (p5 != last5) { n = max(1, g5 * sr / 1000); slope5 = (p5 - cur5) / n; left5 = n; last5 = p5; }\nif (left5 > 0) { cur5 = cur5 + slope5; left5 = left5 - 1; if (left5 <= 0) { cur5 = last5; } }\nif (k5 != lastk5) { lastk5 = k5; wait5 = w5 * sr / 1000; }\nif (wait5 >= 0) {\n    wait5 = wait5 - 1;\n    if (wait5 < 0) {\n        ofade5 = amp5 > 0.00001; oamp5 = amp5 * env5 * env5; opos5 = pos5;   // the ringing note fades out\n        pos5 = 0; amp5 = v5 * v5; env5 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp5 > 0.00001) {\n    inc = mtof(cur5 + vibamt + -0.005) * ratek;\n    y = peek(smp, pos5, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos5 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos5 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos5 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade5 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos5, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos5 > xfstart) {\n            fade = min(1, (opos5 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos5 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp5 * ofade5;\n        opos5 = opos5 + inc;\n        if (looping && opos5 >= lw) { opos5 = opos5 - ll; }\n        ofade5 = ofade5 - ofinc;\n    }\n    pos5 = pos5 + inc;\n    if (looping && pos5 >= lw) { pos5 = pos5 - ll; }\n    if (pos5 >= len) { amp5 = 0; }   // one-shot: the note ends with the sample\n    amp5 = amp5 * (d5 > 0 ? relk : susk);\n}\nenv5 = swelling ? min(1, env5 + swinc) : 1;\ns = (y * amp5 * env5 * env5 + o) * 0.35;\nL = L + s * 0.7431;\nR = R + s * 0.6691;\n\n\n// voice 6\nif (p6 != last6) { n = max(1, g6 * sr / 1000); slope6 = (p6 - cur6) / n; left6 = n; last6 = p6; }\nif (left6 > 0) { cur6 = cur6 + slope6; left6 = left6 - 1; if (left6 <= 0) { cur6 = last6; } }\nif (k6 != lastk6) { lastk6 = k6; wait6 = w6 * sr / 1000; }\nif (wait6 >= 0) {\n    wait6 = wait6 - 1;\n    if (wait6 < 0) {\n        ofade6 = amp6 > 0.00001; oamp6 = amp6 * env6 * env6; opos6 = pos6;   // the ringing note fades out\n        pos6 = 0; amp6 = v6 * v6; env6 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp6 > 0.00001) {\n    inc = mtof(cur6 + vibamt + 0.015) * ratek;\n    y = peek(smp, pos6, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos6 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos6 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos6 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade6 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos6, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos6 > xfstart) {\n            fade = min(1, (opos6 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos6 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp6 * ofade6;\n        opos6 = opos6 + inc;\n        if (looping && opos6 >= lw) { opos6 = opos6 - ll; }\n        ofade6 = ofade6 - ofinc;\n    }\n    pos6 = pos6 + inc;\n    if (looping && pos6 >= lw) { pos6 = pos6 - ll; }\n    if (pos6 >= len) { amp6 = 0; }   // one-shot: the note ends with the sample\n    amp6 = amp6 * (d6 > 0 ? relk : susk);\n}\nenv6 = swelling ? min(1, env6 + swinc) : 1;\ns = (y * amp6 * env6 * env6 + o) * 0.35;\nL = L + s * 0.809;\nR = R + s * 0.5878;\n\n\n// voice 7\nif (p7 != last7) { n = max(1, g7 * sr / 1000); slope7 = (p7 - cur7) / n; left7 = n; last7 = p7; }\nif (left7 > 0) { cur7 = cur7 + slope7; left7 = left7 - 1; if (left7 <= 0) { cur7 = last7; } }\nif (k7 != lastk7) { lastk7 = k7; wait7 = w7 * sr / 1000; }\nif (wait7 >= 0) {\n    wait7 = wait7 - 1;\n    if (wait7 < 0) {\n        ofade7 = amp7 > 0.00001; oamp7 = amp7 * env7 * env7; opos7 = pos7;   // the ringing note fades out\n        pos7 = 0; amp7 = v7 * v7; env7 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp7 > 0.00001) {\n    inc = mtof(cur7 + vibamt + -0.01) * ratek;\n    y = peek(smp, pos7, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos7 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos7 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos7 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade7 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos7, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos7 > xfstart) {\n            fade = min(1, (opos7 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos7 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp7 * ofade7;\n        opos7 = opos7 + inc;\n        if (looping && opos7 >= lw) { opos7 = opos7 - ll; }\n        ofade7 = ofade7 - ofinc;\n    }\n    pos7 = pos7 + inc;\n    if (looping && pos7 >= lw) { pos7 = pos7 - ll; }\n    if (pos7 >= len) { amp7 = 0; }   // one-shot: the note ends with the sample\n    amp7 = amp7 * (d7 > 0 ? relk : susk);\n}\nenv7 = swelling ? min(1, env7 + swinc) : 1;\ns = (y * amp7 * env7 * env7 + o) * 0.35;\nL = L + s * 0.866;\nR = R + s * 0.5;\n\n\n// voice 8\nif (p8 != last8) { n = max(1, g8 * sr / 1000); slope8 = (p8 - cur8) / n; left8 = n; last8 = p8; }\nif (left8 > 0) { cur8 = cur8 + slope8; left8 = left8 - 1; if (left8 <= 0) { cur8 = last8; } }\nif (k8 != lastk8) { lastk8 = k8; wait8 = w8 * sr / 1000; }\nif (wait8 >= 0) {\n    wait8 = wait8 - 1;\n    if (wait8 < 0) {\n        ofade8 = amp8 > 0.00001; oamp8 = amp8 * env8 * env8; opos8 = pos8;   // the ringing note fades out\n        pos8 = 0; amp8 = v8 * v8; env8 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp8 > 0.00001) {\n    inc = mtof(cur8 + vibamt + 0.005) * ratek;\n    y = peek(smp, pos8, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos8 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos8 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos8 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade8 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos8, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos8 > xfstart) {\n            fade = min(1, (opos8 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos8 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp8 * ofade8;\n        opos8 = opos8 + inc;\n        if (looping && opos8 >= lw) { opos8 = opos8 - ll; }\n        ofade8 = ofade8 - ofinc;\n    }\n    pos8 = pos8 + inc;\n    if (looping && pos8 >= lw) { pos8 = pos8 - ll; }\n    if (pos8 >= len) { amp8 = 0; }   // one-shot: the note ends with the sample\n    amp8 = amp8 * (d8 > 0 ? relk : susk);\n}\nenv8 = swelling ? min(1, env8 + swinc) : 1;\ns = (y * amp8 * env8 * env8 + o) * 0.35;\nL = L + s * 0.9135;\nR = R + s * 0.4067;\n\n\n// voice 9\nif (p9 != last9) { n = max(1, g9 * sr / 1000); slope9 = (p9 - cur9) / n; left9 = n; last9 = p9; }\nif (left9 > 0) { cur9 = cur9 + slope9; left9 = left9 - 1; if (left9 <= 0) { cur9 = last9; } }\nif (k9 != lastk9) { lastk9 = k9; wait9 = w9 * sr / 1000; }\nif (wait9 >= 0) {\n    wait9 = wait9 - 1;\n    if (wait9 < 0) {\n        ofade9 = amp9 > 0.00001; oamp9 = amp9 * env9 * env9; opos9 = pos9;   // the ringing note fades out\n        pos9 = 0; amp9 = v9 * v9; env9 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp9 > 0.00001) {\n    inc = mtof(cur9 + vibamt + -0.015) * ratek;\n    y = peek(smp, pos9, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos9 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos9 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos9 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade9 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos9, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos9 > xfstart) {\n            fade = min(1, (opos9 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos9 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp9 * ofade9;\n        opos9 = opos9 + inc;\n        if (looping && opos9 >= lw) { opos9 = opos9 - ll; }\n        ofade9 = ofade9 - ofinc;\n    }\n    pos9 = pos9 + inc;\n    if (looping && pos9 >= lw) { pos9 = pos9 - ll; }\n    if (pos9 >= len) { amp9 = 0; }   // one-shot: the note ends with the sample\n    amp9 = amp9 * (d9 > 0 ? relk : susk);\n}\nenv9 = swelling ? min(1, env9 + swinc) : 1;\ns = (y * amp9 * env9 * env9 + o) * 0.35;\nL = L + s * 0.9511;\nR = R + s * 0.309;\n\nif (plucked) { vibenv = 0; }\ntonek = 1 - exp(-twopi * 200 * pow(2, tone * 0.066) / sr);\ntlpl = tlpl + tonek * (L - tlpl); L = tlpl;\ntlpr = tlpr + tonek * (R - tlpr); R = tlpr;\ndryl = tanh(L * 0.7);\ndryr = tanh(R * 0.7);\nrin = (dryl + dryr) * 0.04;\nrevsm = revsm + 0.001 * (reverb * 0.01 - revsm);\nrvlfol = wrap(rvlfol + 0.13 / sr, 0, 1);\nrvlenl = (34.0 + 1.2 * sin(rvlfol * twopi)) * sr / 1000;\nrvloopyl = rvdl.read(rvlenl, interp=\"cubic\");\nrvlpl = rvloopyl * 0.45 + rvlpl * 0.55;\nrvhpl = rvhpl + 0.013 * (rvlpl - rvhpl);\nrvbandl = rvlpl - rvhpl;\nrvyl0 = rval0.read(71 * sr / 44100);\nrvvl0 = rvbandl + rvyl0 * 0.6;\nrval0.write(rvvl0);\nrvapl0 = rvyl0 - 0.6 * rvvl0;\nrvyl1 = rval1.read(97 * sr / 44100);\nrvvl1 = rvapl0 + rvyl1 * 0.6;\nrval1.write(rvvl1);\nrvapl1 = rvyl1 - 0.6 * rvvl1;\nrvyl2 = rval2.read(127 * sr / 44100);\nrvvl2 = rvapl1 + rvyl2 * 0.6;\nrval2.write(rvvl2);\nrvapl2 = rvyl2 - 0.6 * rvvl2;\nrvyl3 = rval3.read(157 * sr / 44100);\nrvvl3 = rvapl2 + rvyl3 * 0.6;\nrval3.write(rvvl3);\nrvapl3 = rvyl3 - 0.6 * rvvl3;\nrvyl4 = rval4.read(191 * sr / 44100);\nrvvl4 = rvapl3 + rvyl4 * 0.6;\nrval4.write(rvvl4);\nrvapl4 = rvyl4 - 0.6 * rvvl4;\nrvyl5 = rval5.read(223 * sr / 44100);\nrvvl5 = rvapl4 + rvyl5 * 0.6;\nrval5.write(rvvl5);\nrvapl5 = rvyl5 - 0.6 * rvvl5;\nrvdl.write(clamp(rin + rvapl5 * 0.85, -4, 4));\nwetl = rvapl5;\nrvlfor = wrap(rvlfor + 0.19 / sr, 0, 1);\nrvlenr = (45.0 + 1.2 * sin(rvlfor * twopi)) * sr / 1000;\nrvloopyr = rvdr.read(rvlenr, interp=\"cubic\");\nrvlpr = rvloopyr * 0.45 + rvlpr * 0.55;\nrvhpr = rvhpr + 0.013 * (rvlpr - rvhpr);\nrvbandr = rvlpr - rvhpr;\nrvyr0 = rvar0.read(94 * sr / 44100);\nrvvr0 = rvbandr + rvyr0 * 0.6;\nrvar0.write(rvvr0);\nrvapr0 = rvyr0 - 0.6 * rvvr0;\nrvyr1 = rvar1.read(120 * sr / 44100);\nrvvr1 = rvapr0 + rvyr1 * 0.6;\nrvar1.write(rvvr1);\nrvapr1 = rvyr1 - 0.6 * rvvr1;\nrvyr2 = rvar2.read(150 * sr / 44100);\nrvvr2 = rvapr1 + rvyr2 * 0.6;\nrvar2.write(rvvr2);\nrvapr2 = rvyr2 - 0.6 * rvvr2;\nrvyr3 = rvar3.read(180 * sr / 44100);\nrvvr3 = rvapr2 + rvyr3 * 0.6;\nrvar3.write(rvvr3);\nrvapr3 = rvyr3 - 0.6 * rvvr3;\nrvyr4 = rvar4.read(214 * sr / 44100);\nrvvr4 = rvapr3 + rvyr4 * 0.6;\nrvar4.write(rvvr4);\nrvapr4 = rvyr4 - 0.6 * rvvr4;\nrvyr5 = rvar5.read(246 * sr / 44100);\nrvvr5 = rvapr4 + rvyr5 * 0.6;\nrvar5.write(rvvr5);\nrvapr5 = rvyr5 - 0.6 * rvvr5;\nrvdr.write(clamp(rin + rvapr5 * 0.85, -4, 4));\nwetr = rvapr5;\nvolsm = volsm + 0.001 * (dbtoa(volume) * volpedal - volsm);\noutl = (dryl + wetl * revsm) * volsm;\noutr = (dryr + wetr * revsm) * volsm;\ndcyl = outl - dcxl + 0.995 * dcyl; dcxl = outl;\ndcyr = outr - dcxr + 0.995 * dcyr; dcxr = outr;\nout1 = tanh(dcyl);\nout2 = tanh(dcyr);\n",
+									"code": "Param vib(0.25);\nParam sustain(30000);\nParam tone(100);\nParam swell(0);\nParam blockall(0);\nParam root(60);\nParam fine(0);\nParam loop(1);\nParam lstart(0.3);\nParam lend(0.9);\nParam smpsr(44100);\nBuffer smp(\"smp\");\nHistory vibph(0);\nHistory vibenv(0);\nHistory tlpl(0);\nHistory tlpr(0);\nParam p0(66);\nParam g0(0);\nParam k0(0);\nParam v0(0.8);\nParam w0(0);\nParam d0(1);\nHistory cur0(66);\nHistory last0(66);\nHistory slope0(0);\nHistory left0(0);\nHistory lastk0(0);\nHistory wait0(-1);\nHistory env0(1);\nHistory pos0(0);\nHistory amp0(0);\nHistory opos0(0);\nHistory oamp0(0);\nHistory ofade0(0);\nParam x0(1);\nParam t0(0.5);\nHistory xs0(1);\nHistory ts0(0.5);\nHistory tl0(0);\nParam p1(63);\nParam g1(0);\nParam k1(0);\nParam v1(0.8);\nParam w1(0);\nParam d1(1);\nHistory cur1(63);\nHistory last1(63);\nHistory slope1(0);\nHistory left1(0);\nHistory lastk1(0);\nHistory wait1(-1);\nHistory env1(1);\nHistory pos1(0);\nHistory amp1(0);\nHistory opos1(0);\nHistory oamp1(0);\nHistory ofade1(0);\nParam x1(1);\nParam t1(0.5);\nHistory xs1(1);\nHistory ts1(0.5);\nHistory tl1(0);\nParam p2(68);\nParam g2(0);\nParam k2(0);\nParam v2(0.8);\nParam w2(0);\nParam d2(1);\nHistory cur2(68);\nHistory last2(68);\nHistory slope2(0);\nHistory left2(0);\nHistory lastk2(0);\nHistory wait2(-1);\nHistory env2(1);\nHistory pos2(0);\nHistory amp2(0);\nHistory opos2(0);\nHistory oamp2(0);\nHistory ofade2(0);\nParam x2(1);\nParam t2(0.5);\nHistory xs2(1);\nHistory ts2(0.5);\nHistory tl2(0);\nParam p3(64);\nParam g3(0);\nParam k3(0);\nParam v3(0.8);\nParam w3(0);\nParam d3(1);\nHistory cur3(64);\nHistory last3(64);\nHistory slope3(0);\nHistory left3(0);\nHistory lastk3(0);\nHistory wait3(-1);\nHistory env3(1);\nHistory pos3(0);\nHistory amp3(0);\nHistory opos3(0);\nHistory oamp3(0);\nHistory ofade3(0);\nParam x3(1);\nParam t3(0.5);\nHistory xs3(1);\nHistory ts3(0.5);\nHistory tl3(0);\nParam p4(59);\nParam g4(0);\nParam k4(0);\nParam v4(0.8);\nParam w4(0);\nParam d4(1);\nHistory cur4(59);\nHistory last4(59);\nHistory slope4(0);\nHistory left4(0);\nHistory lastk4(0);\nHistory wait4(-1);\nHistory env4(1);\nHistory pos4(0);\nHistory amp4(0);\nHistory opos4(0);\nHistory oamp4(0);\nHistory ofade4(0);\nParam x4(1);\nParam t4(0.5);\nHistory xs4(1);\nHistory ts4(0.5);\nHistory tl4(0);\nParam p5(56);\nParam g5(0);\nParam k5(0);\nParam v5(0.8);\nParam w5(0);\nParam d5(1);\nHistory cur5(56);\nHistory last5(56);\nHistory slope5(0);\nHistory left5(0);\nHistory lastk5(0);\nHistory wait5(-1);\nHistory env5(1);\nHistory pos5(0);\nHistory amp5(0);\nHistory opos5(0);\nHistory oamp5(0);\nHistory ofade5(0);\nParam x5(1);\nParam t5(0.5);\nHistory xs5(1);\nHistory ts5(0.5);\nHistory tl5(0);\nParam p6(54);\nParam g6(0);\nParam k6(0);\nParam v6(0.8);\nParam w6(0);\nParam d6(1);\nHistory cur6(54);\nHistory last6(54);\nHistory slope6(0);\nHistory left6(0);\nHistory lastk6(0);\nHistory wait6(-1);\nHistory env6(1);\nHistory pos6(0);\nHistory amp6(0);\nHistory opos6(0);\nHistory oamp6(0);\nHistory ofade6(0);\nParam x6(1);\nParam t6(0.5);\nHistory xs6(1);\nHistory ts6(0.5);\nHistory tl6(0);\nParam p7(52);\nParam g7(0);\nParam k7(0);\nParam v7(0.8);\nParam w7(0);\nParam d7(1);\nHistory cur7(52);\nHistory last7(52);\nHistory slope7(0);\nHistory left7(0);\nHistory lastk7(0);\nHistory wait7(-1);\nHistory env7(1);\nHistory pos7(0);\nHistory amp7(0);\nHistory opos7(0);\nHistory oamp7(0);\nHistory ofade7(0);\nParam x7(1);\nParam t7(0.5);\nHistory xs7(1);\nHistory ts7(0.5);\nHistory tl7(0);\nParam p8(50);\nParam g8(0);\nParam k8(0);\nParam v8(0.8);\nParam w8(0);\nParam d8(1);\nHistory cur8(50);\nHistory last8(50);\nHistory slope8(0);\nHistory left8(0);\nHistory lastk8(0);\nHistory wait8(-1);\nHistory env8(1);\nHistory pos8(0);\nHistory amp8(0);\nHistory opos8(0);\nHistory oamp8(0);\nHistory ofade8(0);\nParam x8(1);\nParam t8(0.5);\nHistory xs8(1);\nHistory ts8(0.5);\nHistory tl8(0);\nParam p9(47);\nParam g9(0);\nParam k9(0);\nParam v9(0.8);\nParam w9(0);\nParam d9(1);\nHistory cur9(47);\nHistory last9(47);\nHistory slope9(0);\nHistory left9(0);\nHistory lastk9(0);\nHistory wait9(-1);\nHistory env9(1);\nHistory pos9(0);\nHistory amp9(0);\nHistory opos9(0);\nHistory oamp9(0);\nHistory ofade9(0);\nParam x9(1);\nParam t9(0.5);\nHistory xs9(1);\nHistory ts9(0.5);\nHistory tl9(0);\nParam reverb(30);\nParam volume(0);\nParam volpedal(1);\nHistory volsm(1);\nHistory revsm(0.3);\nHistory dcxl(0);\nHistory dcyl(0);\nHistory dcxr(0);\nHistory dcyr(0);\nDelay rvdl(8192);\nHistory rvlfol(0);\nHistory rvlpl(0);\nHistory rvhpl(0);\nDelay rval0(8192);\nDelay rval1(8192);\nDelay rval2(8192);\nDelay rval3(8192);\nDelay rval4(8192);\nDelay rval5(8192);\nDelay rvdr(8192);\nHistory rvlfor(0);\nHistory rvlpr(0);\nHistory rvhpr(0);\nDelay rvar0(8192);\nDelay rvar1(8192);\nDelay rvar2(8192);\nDelay rvar3(8192);\nDelay rvar4(8192);\nDelay rvar5(8192);\nsr = samplerate;\nn = 0; y = 0; o = 0; inc = 0; s = 0; fade = 0; plucked = 0; L = 0; R = 0;\nvibph = wrap(vibph + 5.5 / sr, 0, 1);\nvibenv = min(1, vibenv + 1 / (0.7 * sr));\nvibamt = sin(vibph * twopi) * vib * 0.3 * vibenv;\nswelling = swell > 1;\nswinc = 1 / max(1, swell * sr / 1000);\nlen = dim(smp);\nratek = smpsr / sr / mtof(root + fine / 100);\nls = min(lstart, lend) * len;\nle = max(lstart, lend) * len;\nll = le - ls;\nlooping = loop > 0.5 && ll > 100;\nxfcap = min(ll * 0.5, 0.05 * smpsr);\nxfpre = min(xfcap, ls);\nxfpost = min(xfcap, len - le);\nxf = max(xfpre, xfpost);\nxfading = looping && xf >= 1;\nlw = xfpost > xfpre ? le + xf : le;\nxfstart = lw - xf;\nofinc = 1 / (0.005 * sr);\nrelk = exp(-6.9078 / (0.15 * sr));\nsusk = sustain >= 29999 ? 1 : exp(-6.9078 / (sustain * sr / 1000));\n\n// voice 0\nif (p0 != last0) { n = max(1, g0 * sr / 1000); slope0 = (p0 - cur0) / n; left0 = n; last0 = p0; }\nif (left0 > 0) { cur0 = cur0 + slope0; left0 = left0 - 1; if (left0 <= 0) { cur0 = last0; } }\nif (k0 != lastk0) { lastk0 = k0; wait0 = w0 * sr / 1000; }\nif (wait0 >= 0) {\n    wait0 = wait0 - 1;\n    if (wait0 < 0) {\n        ofade0 = amp0 > 0.00001; oamp0 = amp0 * env0 * env0; opos0 = pos0;   // the ringing note fades out\n        pos0 = 0; amp0 = v0 * v0; env0 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp0 > 0.00001) {\n    inc = mtof(cur0 + vibamt + 0.015) * ratek;\n    y = peek(smp, pos0, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos0 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos0 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos0 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade0 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos0, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos0 > xfstart) {\n            fade = min(1, (opos0 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos0 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp0 * ofade0;\n        opos0 = opos0 + inc;\n        if (looping && opos0 >= lw) { opos0 = opos0 - ll; }\n        ofade0 = ofade0 - ofinc;\n    }\n    pos0 = pos0 + inc;\n    if (looping && pos0 >= lw) { pos0 = pos0 - ll; }\n    if (pos0 >= len) { amp0 = 0; }   // one-shot: the note ends with the sample\n    amp0 = amp0 * (d0 > 0 ? relk : susk);\n}\nenv0 = swelling ? min(1, env0 + swinc) : 1;\ns = (y * amp0 * env0 * env0 + o) * 0.35;\nxs0 = xs0 + 0.002 * (x0 - xs0); ts0 = ts0 + 0.002 * (t0 - ts0);\ntl0 = tl0 + 0.15 * (s - tl0);\ns = (tl0 + (s - tl0) * exp2(ts0 * 3 - 1.5)) * xs0;\nL = L + s * 0.309;\nR = R + s * 0.9511;\n\n\n// voice 1\nif (p1 != last1) { n = max(1, g1 * sr / 1000); slope1 = (p1 - cur1) / n; left1 = n; last1 = p1; }\nif (left1 > 0) { cur1 = cur1 + slope1; left1 = left1 - 1; if (left1 <= 0) { cur1 = last1; } }\nif (k1 != lastk1) { lastk1 = k1; wait1 = w1 * sr / 1000; }\nif (wait1 >= 0) {\n    wait1 = wait1 - 1;\n    if (wait1 < 0) {\n        ofade1 = amp1 > 0.00001; oamp1 = amp1 * env1 * env1; opos1 = pos1;   // the ringing note fades out\n        pos1 = 0; amp1 = v1 * v1; env1 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp1 > 0.00001) {\n    inc = mtof(cur1 + vibamt + -0.01) * ratek;\n    y = peek(smp, pos1, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos1 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos1 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos1 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade1 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos1, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos1 > xfstart) {\n            fade = min(1, (opos1 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos1 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp1 * ofade1;\n        opos1 = opos1 + inc;\n        if (looping && opos1 >= lw) { opos1 = opos1 - ll; }\n        ofade1 = ofade1 - ofinc;\n    }\n    pos1 = pos1 + inc;\n    if (looping && pos1 >= lw) { pos1 = pos1 - ll; }\n    if (pos1 >= len) { amp1 = 0; }   // one-shot: the note ends with the sample\n    amp1 = amp1 * (d1 > 0 ? relk : susk);\n}\nenv1 = swelling ? min(1, env1 + swinc) : 1;\ns = (y * amp1 * env1 * env1 + o) * 0.35;\nxs1 = xs1 + 0.002 * (x1 - xs1); ts1 = ts1 + 0.002 * (t1 - ts1);\ntl1 = tl1 + 0.15 * (s - tl1);\ns = (tl1 + (s - tl1) * exp2(ts1 * 3 - 1.5)) * xs1;\nL = L + s * 0.4067;\nR = R + s * 0.9135;\n\n\n// voice 2\nif (p2 != last2) { n = max(1, g2 * sr / 1000); slope2 = (p2 - cur2) / n; left2 = n; last2 = p2; }\nif (left2 > 0) { cur2 = cur2 + slope2; left2 = left2 - 1; if (left2 <= 0) { cur2 = last2; } }\nif (k2 != lastk2) { lastk2 = k2; wait2 = w2 * sr / 1000; }\nif (wait2 >= 0) {\n    wait2 = wait2 - 1;\n    if (wait2 < 0) {\n        ofade2 = amp2 > 0.00001; oamp2 = amp2 * env2 * env2; opos2 = pos2;   // the ringing note fades out\n        pos2 = 0; amp2 = v2 * v2; env2 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp2 > 0.00001) {\n    inc = mtof(cur2 + vibamt + 0.005) * ratek;\n    y = peek(smp, pos2, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos2 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos2 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos2 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade2 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos2, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos2 > xfstart) {\n            fade = min(1, (opos2 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos2 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp2 * ofade2;\n        opos2 = opos2 + inc;\n        if (looping && opos2 >= lw) { opos2 = opos2 - ll; }\n        ofade2 = ofade2 - ofinc;\n    }\n    pos2 = pos2 + inc;\n    if (looping && pos2 >= lw) { pos2 = pos2 - ll; }\n    if (pos2 >= len) { amp2 = 0; }   // one-shot: the note ends with the sample\n    amp2 = amp2 * (d2 > 0 ? relk : susk);\n}\nenv2 = swelling ? min(1, env2 + swinc) : 1;\ns = (y * amp2 * env2 * env2 + o) * 0.35;\nxs2 = xs2 + 0.002 * (x2 - xs2); ts2 = ts2 + 0.002 * (t2 - ts2);\ntl2 = tl2 + 0.15 * (s - tl2);\ns = (tl2 + (s - tl2) * exp2(ts2 * 3 - 1.5)) * xs2;\nL = L + s * 0.5;\nR = R + s * 0.866;\n\n\n// voice 3\nif (p3 != last3) { n = max(1, g3 * sr / 1000); slope3 = (p3 - cur3) / n; left3 = n; last3 = p3; }\nif (left3 > 0) { cur3 = cur3 + slope3; left3 = left3 - 1; if (left3 <= 0) { cur3 = last3; } }\nif (k3 != lastk3) { lastk3 = k3; wait3 = w3 * sr / 1000; }\nif (wait3 >= 0) {\n    wait3 = wait3 - 1;\n    if (wait3 < 0) {\n        ofade3 = amp3 > 0.00001; oamp3 = amp3 * env3 * env3; opos3 = pos3;   // the ringing note fades out\n        pos3 = 0; amp3 = v3 * v3; env3 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp3 > 0.00001) {\n    inc = mtof(cur3 + vibamt + -0.015) * ratek;\n    y = peek(smp, pos3, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos3 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos3 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos3 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade3 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos3, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos3 > xfstart) {\n            fade = min(1, (opos3 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos3 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp3 * ofade3;\n        opos3 = opos3 + inc;\n        if (looping && opos3 >= lw) { opos3 = opos3 - ll; }\n        ofade3 = ofade3 - ofinc;\n    }\n    pos3 = pos3 + inc;\n    if (looping && pos3 >= lw) { pos3 = pos3 - ll; }\n    if (pos3 >= len) { amp3 = 0; }   // one-shot: the note ends with the sample\n    amp3 = amp3 * (d3 > 0 ? relk : susk);\n}\nenv3 = swelling ? min(1, env3 + swinc) : 1;\ns = (y * amp3 * env3 * env3 + o) * 0.35;\nxs3 = xs3 + 0.002 * (x3 - xs3); ts3 = ts3 + 0.002 * (t3 - ts3);\ntl3 = tl3 + 0.15 * (s - tl3);\ns = (tl3 + (s - tl3) * exp2(ts3 * 3 - 1.5)) * xs3;\nL = L + s * 0.5878;\nR = R + s * 0.809;\n\n\n// voice 4\nif (p4 != last4) { n = max(1, g4 * sr / 1000); slope4 = (p4 - cur4) / n; left4 = n; last4 = p4; }\nif (left4 > 0) { cur4 = cur4 + slope4; left4 = left4 - 1; if (left4 <= 0) { cur4 = last4; } }\nif (k4 != lastk4) { lastk4 = k4; wait4 = w4 * sr / 1000; }\nif (wait4 >= 0) {\n    wait4 = wait4 - 1;\n    if (wait4 < 0) {\n        ofade4 = amp4 > 0.00001; oamp4 = amp4 * env4 * env4; opos4 = pos4;   // the ringing note fades out\n        pos4 = 0; amp4 = v4 * v4; env4 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp4 > 0.00001) {\n    inc = mtof(cur4 + vibamt + 0.01) * ratek;\n    y = peek(smp, pos4, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos4 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos4 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos4 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade4 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos4, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos4 > xfstart) {\n            fade = min(1, (opos4 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos4 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp4 * ofade4;\n        opos4 = opos4 + inc;\n        if (looping && opos4 >= lw) { opos4 = opos4 - ll; }\n        ofade4 = ofade4 - ofinc;\n    }\n    pos4 = pos4 + inc;\n    if (looping && pos4 >= lw) { pos4 = pos4 - ll; }\n    if (pos4 >= len) { amp4 = 0; }   // one-shot: the note ends with the sample\n    amp4 = amp4 * (d4 > 0 ? relk : susk);\n}\nenv4 = swelling ? min(1, env4 + swinc) : 1;\ns = (y * amp4 * env4 * env4 + o) * 0.35;\nxs4 = xs4 + 0.002 * (x4 - xs4); ts4 = ts4 + 0.002 * (t4 - ts4);\ntl4 = tl4 + 0.15 * (s - tl4);\ns = (tl4 + (s - tl4) * exp2(ts4 * 3 - 1.5)) * xs4;\nL = L + s * 0.6691;\nR = R + s * 0.7431;\n\n\n// voice 5\nif (p5 != last5) { n = max(1, g5 * sr / 1000); slope5 = (p5 - cur5) / n; left5 = n; last5 = p5; }\nif (left5 > 0) { cur5 = cur5 + slope5; left5 = left5 - 1; if (left5 <= 0) { cur5 = last5; } }\nif (k5 != lastk5) { lastk5 = k5; wait5 = w5 * sr / 1000; }\nif (wait5 >= 0) {\n    wait5 = wait5 - 1;\n    if (wait5 < 0) {\n        ofade5 = amp5 > 0.00001; oamp5 = amp5 * env5 * env5; opos5 = pos5;   // the ringing note fades out\n        pos5 = 0; amp5 = v5 * v5; env5 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp5 > 0.00001) {\n    inc = mtof(cur5 + vibamt + -0.005) * ratek;\n    y = peek(smp, pos5, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos5 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos5 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos5 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade5 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos5, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos5 > xfstart) {\n            fade = min(1, (opos5 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos5 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp5 * ofade5;\n        opos5 = opos5 + inc;\n        if (looping && opos5 >= lw) { opos5 = opos5 - ll; }\n        ofade5 = ofade5 - ofinc;\n    }\n    pos5 = pos5 + inc;\n    if (looping && pos5 >= lw) { pos5 = pos5 - ll; }\n    if (pos5 >= len) { amp5 = 0; }   // one-shot: the note ends with the sample\n    amp5 = amp5 * (d5 > 0 ? relk : susk);\n}\nenv5 = swelling ? min(1, env5 + swinc) : 1;\ns = (y * amp5 * env5 * env5 + o) * 0.35;\nxs5 = xs5 + 0.002 * (x5 - xs5); ts5 = ts5 + 0.002 * (t5 - ts5);\ntl5 = tl5 + 0.15 * (s - tl5);\ns = (tl5 + (s - tl5) * exp2(ts5 * 3 - 1.5)) * xs5;\nL = L + s * 0.7431;\nR = R + s * 0.6691;\n\n\n// voice 6\nif (p6 != last6) { n = max(1, g6 * sr / 1000); slope6 = (p6 - cur6) / n; left6 = n; last6 = p6; }\nif (left6 > 0) { cur6 = cur6 + slope6; left6 = left6 - 1; if (left6 <= 0) { cur6 = last6; } }\nif (k6 != lastk6) { lastk6 = k6; wait6 = w6 * sr / 1000; }\nif (wait6 >= 0) {\n    wait6 = wait6 - 1;\n    if (wait6 < 0) {\n        ofade6 = amp6 > 0.00001; oamp6 = amp6 * env6 * env6; opos6 = pos6;   // the ringing note fades out\n        pos6 = 0; amp6 = v6 * v6; env6 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp6 > 0.00001) {\n    inc = mtof(cur6 + vibamt + 0.015) * ratek;\n    y = peek(smp, pos6, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos6 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos6 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos6 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade6 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos6, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos6 > xfstart) {\n            fade = min(1, (opos6 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos6 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp6 * ofade6;\n        opos6 = opos6 + inc;\n        if (looping && opos6 >= lw) { opos6 = opos6 - ll; }\n        ofade6 = ofade6 - ofinc;\n    }\n    pos6 = pos6 + inc;\n    if (looping && pos6 >= lw) { pos6 = pos6 - ll; }\n    if (pos6 >= len) { amp6 = 0; }   // one-shot: the note ends with the sample\n    amp6 = amp6 * (d6 > 0 ? relk : susk);\n}\nenv6 = swelling ? min(1, env6 + swinc) : 1;\ns = (y * amp6 * env6 * env6 + o) * 0.35;\nxs6 = xs6 + 0.002 * (x6 - xs6); ts6 = ts6 + 0.002 * (t6 - ts6);\ntl6 = tl6 + 0.15 * (s - tl6);\ns = (tl6 + (s - tl6) * exp2(ts6 * 3 - 1.5)) * xs6;\nL = L + s * 0.809;\nR = R + s * 0.5878;\n\n\n// voice 7\nif (p7 != last7) { n = max(1, g7 * sr / 1000); slope7 = (p7 - cur7) / n; left7 = n; last7 = p7; }\nif (left7 > 0) { cur7 = cur7 + slope7; left7 = left7 - 1; if (left7 <= 0) { cur7 = last7; } }\nif (k7 != lastk7) { lastk7 = k7; wait7 = w7 * sr / 1000; }\nif (wait7 >= 0) {\n    wait7 = wait7 - 1;\n    if (wait7 < 0) {\n        ofade7 = amp7 > 0.00001; oamp7 = amp7 * env7 * env7; opos7 = pos7;   // the ringing note fades out\n        pos7 = 0; amp7 = v7 * v7; env7 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp7 > 0.00001) {\n    inc = mtof(cur7 + vibamt + -0.01) * ratek;\n    y = peek(smp, pos7, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos7 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos7 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos7 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade7 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos7, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos7 > xfstart) {\n            fade = min(1, (opos7 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos7 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp7 * ofade7;\n        opos7 = opos7 + inc;\n        if (looping && opos7 >= lw) { opos7 = opos7 - ll; }\n        ofade7 = ofade7 - ofinc;\n    }\n    pos7 = pos7 + inc;\n    if (looping && pos7 >= lw) { pos7 = pos7 - ll; }\n    if (pos7 >= len) { amp7 = 0; }   // one-shot: the note ends with the sample\n    amp7 = amp7 * (d7 > 0 ? relk : susk);\n}\nenv7 = swelling ? min(1, env7 + swinc) : 1;\ns = (y * amp7 * env7 * env7 + o) * 0.35;\nxs7 = xs7 + 0.002 * (x7 - xs7); ts7 = ts7 + 0.002 * (t7 - ts7);\ntl7 = tl7 + 0.15 * (s - tl7);\ns = (tl7 + (s - tl7) * exp2(ts7 * 3 - 1.5)) * xs7;\nL = L + s * 0.866;\nR = R + s * 0.5;\n\n\n// voice 8\nif (p8 != last8) { n = max(1, g8 * sr / 1000); slope8 = (p8 - cur8) / n; left8 = n; last8 = p8; }\nif (left8 > 0) { cur8 = cur8 + slope8; left8 = left8 - 1; if (left8 <= 0) { cur8 = last8; } }\nif (k8 != lastk8) { lastk8 = k8; wait8 = w8 * sr / 1000; }\nif (wait8 >= 0) {\n    wait8 = wait8 - 1;\n    if (wait8 < 0) {\n        ofade8 = amp8 > 0.00001; oamp8 = amp8 * env8 * env8; opos8 = pos8;   // the ringing note fades out\n        pos8 = 0; amp8 = v8 * v8; env8 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp8 > 0.00001) {\n    inc = mtof(cur8 + vibamt + 0.005) * ratek;\n    y = peek(smp, pos8, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos8 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos8 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos8 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade8 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos8, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos8 > xfstart) {\n            fade = min(1, (opos8 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos8 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp8 * ofade8;\n        opos8 = opos8 + inc;\n        if (looping && opos8 >= lw) { opos8 = opos8 - ll; }\n        ofade8 = ofade8 - ofinc;\n    }\n    pos8 = pos8 + inc;\n    if (looping && pos8 >= lw) { pos8 = pos8 - ll; }\n    if (pos8 >= len) { amp8 = 0; }   // one-shot: the note ends with the sample\n    amp8 = amp8 * (d8 > 0 ? relk : susk);\n}\nenv8 = swelling ? min(1, env8 + swinc) : 1;\ns = (y * amp8 * env8 * env8 + o) * 0.35;\nxs8 = xs8 + 0.002 * (x8 - xs8); ts8 = ts8 + 0.002 * (t8 - ts8);\ntl8 = tl8 + 0.15 * (s - tl8);\ns = (tl8 + (s - tl8) * exp2(ts8 * 3 - 1.5)) * xs8;\nL = L + s * 0.9135;\nR = R + s * 0.4067;\n\n\n// voice 9\nif (p9 != last9) { n = max(1, g9 * sr / 1000); slope9 = (p9 - cur9) / n; left9 = n; last9 = p9; }\nif (left9 > 0) { cur9 = cur9 + slope9; left9 = left9 - 1; if (left9 <= 0) { cur9 = last9; } }\nif (k9 != lastk9) { lastk9 = k9; wait9 = w9 * sr / 1000; }\nif (wait9 >= 0) {\n    wait9 = wait9 - 1;\n    if (wait9 < 0) {\n        ofade9 = amp9 > 0.00001; oamp9 = amp9 * env9 * env9; opos9 = pos9;   // the ringing note fades out\n        pos9 = 0; amp9 = v9 * v9; env9 = swelling ? 0 : 1; plucked = 1;\n    }\n}\ny = 0; o = 0;\nif (amp9 > 0.00001) {\n    inc = mtof(cur9 + vibamt + -0.015) * ratek;\n    y = peek(smp, pos9, 0, interp=\"spline\", boundmode=\"ignore\");\n    if (xfading && pos9 > xfstart) {   // equal-power crossfade into the loop start: no click at the seam\n        fade = min(1, (pos9 - xfstart) / xf);   // past End (knob moved, shorter sample): >1 \u2192 sqrt NaN \u2192 silence\n        y = y * sqrt(1 - fade) + peek(smp, pos9 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n    }\n    if (ofade9 > 0) {   // re-picked while ringing: the old note keeps playing under the new one for 5 ms\n        o = peek(smp, opos9, 0, interp=\"spline\", boundmode=\"ignore\");\n        if (xfading && opos9 > xfstart) {\n            fade = min(1, (opos9 - xfstart) / xf);\n            o = o * sqrt(1 - fade) + peek(smp, opos9 - ll, 0, interp=\"spline\", boundmode=\"ignore\") * sqrt(fade);\n        }\n        o = o * oamp9 * ofade9;\n        opos9 = opos9 + inc;\n        if (looping && opos9 >= lw) { opos9 = opos9 - ll; }\n        ofade9 = ofade9 - ofinc;\n    }\n    pos9 = pos9 + inc;\n    if (looping && pos9 >= lw) { pos9 = pos9 - ll; }\n    if (pos9 >= len) { amp9 = 0; }   // one-shot: the note ends with the sample\n    amp9 = amp9 * (d9 > 0 ? relk : susk);\n}\nenv9 = swelling ? min(1, env9 + swinc) : 1;\ns = (y * amp9 * env9 * env9 + o) * 0.35;\nxs9 = xs9 + 0.002 * (x9 - xs9); ts9 = ts9 + 0.002 * (t9 - ts9);\ntl9 = tl9 + 0.15 * (s - tl9);\ns = (tl9 + (s - tl9) * exp2(ts9 * 3 - 1.5)) * xs9;\nL = L + s * 0.9511;\nR = R + s * 0.309;\n\nif (plucked) { vibenv = 0; }\ntonek = 1 - exp(-twopi * 200 * pow(2, tone * 0.066) / sr);\ntlpl = tlpl + tonek * (L - tlpl); L = tlpl;\ntlpr = tlpr + tonek * (R - tlpr); R = tlpr;\ndryl = tanh(L * 0.7);\ndryr = tanh(R * 0.7);\nrin = (dryl + dryr) * 0.04;\nrevsm = revsm + 0.001 * (reverb * 0.01 - revsm);\nrvlfol = wrap(rvlfol + 0.13 / sr, 0, 1);\nrvlenl = (34.0 + 1.2 * sin(rvlfol * twopi)) * sr / 1000;\nrvloopyl = rvdl.read(rvlenl, interp=\"cubic\");\nrvlpl = rvloopyl * 0.45 + rvlpl * 0.55;\nrvhpl = rvhpl + 0.013 * (rvlpl - rvhpl);\nrvbandl = rvlpl - rvhpl;\nrvyl0 = rval0.read(71 * sr / 44100);\nrvvl0 = rvbandl + rvyl0 * 0.6;\nrval0.write(rvvl0);\nrvapl0 = rvyl0 - 0.6 * rvvl0;\nrvyl1 = rval1.read(97 * sr / 44100);\nrvvl1 = rvapl0 + rvyl1 * 0.6;\nrval1.write(rvvl1);\nrvapl1 = rvyl1 - 0.6 * rvvl1;\nrvyl2 = rval2.read(127 * sr / 44100);\nrvvl2 = rvapl1 + rvyl2 * 0.6;\nrval2.write(rvvl2);\nrvapl2 = rvyl2 - 0.6 * rvvl2;\nrvyl3 = rval3.read(157 * sr / 44100);\nrvvl3 = rvapl2 + rvyl3 * 0.6;\nrval3.write(rvvl3);\nrvapl3 = rvyl3 - 0.6 * rvvl3;\nrvyl4 = rval4.read(191 * sr / 44100);\nrvvl4 = rvapl3 + rvyl4 * 0.6;\nrval4.write(rvvl4);\nrvapl4 = rvyl4 - 0.6 * rvvl4;\nrvyl5 = rval5.read(223 * sr / 44100);\nrvvl5 = rvapl4 + rvyl5 * 0.6;\nrval5.write(rvvl5);\nrvapl5 = rvyl5 - 0.6 * rvvl5;\nrvdl.write(clamp(rin + rvapl5 * 0.85, -4, 4));\nwetl = rvapl5;\nrvlfor = wrap(rvlfor + 0.19 / sr, 0, 1);\nrvlenr = (45.0 + 1.2 * sin(rvlfor * twopi)) * sr / 1000;\nrvloopyr = rvdr.read(rvlenr, interp=\"cubic\");\nrvlpr = rvloopyr * 0.45 + rvlpr * 0.55;\nrvhpr = rvhpr + 0.013 * (rvlpr - rvhpr);\nrvbandr = rvlpr - rvhpr;\nrvyr0 = rvar0.read(94 * sr / 44100);\nrvvr0 = rvbandr + rvyr0 * 0.6;\nrvar0.write(rvvr0);\nrvapr0 = rvyr0 - 0.6 * rvvr0;\nrvyr1 = rvar1.read(120 * sr / 44100);\nrvvr1 = rvapr0 + rvyr1 * 0.6;\nrvar1.write(rvvr1);\nrvapr1 = rvyr1 - 0.6 * rvvr1;\nrvyr2 = rvar2.read(150 * sr / 44100);\nrvvr2 = rvapr1 + rvyr2 * 0.6;\nrvar2.write(rvvr2);\nrvapr2 = rvyr2 - 0.6 * rvvr2;\nrvyr3 = rvar3.read(180 * sr / 44100);\nrvvr3 = rvapr2 + rvyr3 * 0.6;\nrvar3.write(rvvr3);\nrvapr3 = rvyr3 - 0.6 * rvvr3;\nrvyr4 = rvar4.read(214 * sr / 44100);\nrvvr4 = rvapr3 + rvyr4 * 0.6;\nrvar4.write(rvvr4);\nrvapr4 = rvyr4 - 0.6 * rvvr4;\nrvyr5 = rvar5.read(246 * sr / 44100);\nrvvr5 = rvapr4 + rvyr5 * 0.6;\nrvar5.write(rvvr5);\nrvapr5 = rvyr5 - 0.6 * rvvr5;\nrvdr.write(clamp(rin + rvapr5 * 0.85, -4, 4));\nwetr = rvapr5;\nvolsm = volsm + 0.001 * (dbtoa(volume) * volpedal - volsm);\noutl = (dryl + wetl * revsm) * volsm;\noutr = (dryr + wetr * revsm) * volsm;\ndcyl = outl - dcxl + 0.995 * dcyl; dcxl = outl;\ndcyr = outr - dcxr + 0.995 * dcyr; dcxr = outr;\nout1 = tanh(dcyl);\nout2 = tanh(dcyr);\n",
 									"fontface": 0,
 									"fontname": "<Monospaced>",
 									"fontsize": 12.0,
@@ -397,7 +433,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Pedal A",
+							"parameter_longname": "Pedal A UI",
 							"parameter_shortname": "A",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -408,7 +444,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								0
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -427,6 +464,62 @@
 						938,
 						740,
 						105,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ped_A_menu",
+					"maxclass": "live.menu",
+					"varname": "ped_A_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						938,
+						760,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Pedal A",
+							"parameter_shortname": "A",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								0
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_ped_A",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						938,
+						790,
+						77,
 						22
 					]
 				}
@@ -523,7 +616,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Pedal B",
+							"parameter_longname": "Pedal B UI",
 							"parameter_shortname": "B",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -534,7 +627,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								0
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -553,6 +647,62 @@
 						972,
 						740,
 						105,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ped_B_menu",
+					"maxclass": "live.menu",
+					"varname": "ped_B_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						972,
+						760,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Pedal B",
+							"parameter_shortname": "B",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								0
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_ped_B",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						972,
+						790,
+						77,
 						22
 					]
 				}
@@ -649,7 +799,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Pedal C",
+							"parameter_longname": "Pedal C UI",
 							"parameter_shortname": "C",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -660,7 +810,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								0
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -679,6 +830,62 @@
 						1006,
 						740,
 						105,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ped_C_menu",
+					"maxclass": "live.menu",
+					"varname": "ped_C_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						1006,
+						760,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Pedal C",
+							"parameter_shortname": "C",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								0
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_ped_C",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						1006,
+						790,
+						77,
 						22
 					]
 				}
@@ -775,7 +982,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Pedal LKL",
+							"parameter_longname": "Pedal LKL UI",
 							"parameter_shortname": "LKL",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -786,7 +993,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								0
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -805,6 +1013,62 @@
 						1050,
 						740,
 						119,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ped_LKL_menu",
+					"maxclass": "live.menu",
+					"varname": "ped_LKL_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						1050,
+						760,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Pedal LKL",
+							"parameter_shortname": "LKL",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								0
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_ped_LKL",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						1050,
+						790,
+						77,
 						22
 					]
 				}
@@ -901,7 +1165,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Pedal LKR",
+							"parameter_longname": "Pedal LKR UI",
 							"parameter_shortname": "LKR",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -912,7 +1176,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								0
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -931,6 +1196,62 @@
 						1090,
 						740,
 						119,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ped_LKR_menu",
+					"maxclass": "live.menu",
+					"varname": "ped_LKR_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						1090,
+						760,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Pedal LKR",
+							"parameter_shortname": "LKR",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								0
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_ped_LKR",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						1090,
+						790,
+						77,
 						22
 					]
 				}
@@ -1027,7 +1348,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Pedal RKL",
+							"parameter_longname": "Pedal RKL UI",
 							"parameter_shortname": "RKL",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -1038,7 +1359,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								0
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -1057,6 +1379,62 @@
 						1130,
 						740,
 						119,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ped_RKL_menu",
+					"maxclass": "live.menu",
+					"varname": "ped_RKL_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						1130,
+						760,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Pedal RKL",
+							"parameter_shortname": "RKL",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								0
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_ped_RKL",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						1130,
+						790,
+						77,
 						22
 					]
 				}
@@ -1153,7 +1531,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Pedal RKR",
+							"parameter_longname": "Pedal RKR UI",
 							"parameter_shortname": "RKR",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -1164,7 +1542,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								0
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -1183,6 +1562,62 @@
 						1170,
 						740,
 						119,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "ped_RKR_menu",
+					"maxclass": "live.menu",
+					"varname": "ped_RKR_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						1170,
+						760,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Pedal RKR",
+							"parameter_shortname": "RKR",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								0
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_ped_RKR",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						1170,
+						790,
+						77,
 						22
 					]
 				}
@@ -1309,14 +1744,14 @@
 					"patching_rect": [
 						1380,
 						504,
-						150,
+						104,
 						18
 					],
 					"presentation": 1,
 					"presentation_rect": [
 						580,
 						7,
-						150,
+						104,
 						17
 					],
 					"saved_attribute_attributes": {
@@ -1351,6 +1786,129 @@
 						480,
 						20,
 						84,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "mpe",
+					"maxclass": "live.text",
+					"varname": "mpe",
+					"numinlets": 1,
+					"numoutlets": 2,
+					"outlettype": [
+						"",
+						""
+					],
+					"parameter_enable": 1,
+					"mode": 1,
+					"text": "MPE",
+					"texton": "MPE",
+					"annotation_name": "MPE",
+					"annotation": "On: each note's own pitch bend, pressure and slide (Push 3, Seaboard, Linnstrument\u2026) bend, swell and brighten just its string. Off: every MIDI channel plays like an ordinary keyboard, and pitch bend moves the bar.",
+					"patching_rect": [
+						1540,
+						504,
+						42,
+						18
+					],
+					"presentation": 1,
+					"presentation_rect": [
+						688,
+						7,
+						42,
+						17
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "MPE UI",
+							"parameter_shortname": "MPE",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								1
+							],
+							"parameter_invisible": 1
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "pre_mpe",
+					"maxclass": "newobj",
+					"text": "prepend mpe",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						640,
+						20,
+						77,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "mpe_menu",
+					"maxclass": "live.menu",
+					"varname": "mpe_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						1540,
+						564,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "MPE",
+							"parameter_shortname": "MPE",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								1
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_mpe",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						1540,
+						594,
+						77,
 						22
 					]
 				}
@@ -2263,7 +2821,7 @@
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
-							"parameter_longname": "Loop",
+							"parameter_longname": "Loop UI",
 							"parameter_shortname": "Loop",
 							"parameter_type": 2,
 							"parameter_enum": [
@@ -2274,7 +2832,8 @@
 							"parameter_initial_enable": 1,
 							"parameter_initial": [
 								1
-							]
+							],
+							"parameter_invisible": 1
 						}
 					}
 				}
@@ -2293,6 +2852,62 @@
 						1760,
 						540,
 						84,
+						22
+					]
+				}
+			},
+			{
+				"box": {
+					"id": "loop_menu",
+					"maxclass": "live.menu",
+					"varname": "loop_menu",
+					"hidden": 1,
+					"numinlets": 1,
+					"numoutlets": 3,
+					"outlettype": [
+						"",
+						"",
+						"float"
+					],
+					"parameter_enable": 1,
+					"patching_rect": [
+						1760,
+						566,
+						60,
+						20
+					],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_longname": "Loop",
+							"parameter_shortname": "Loop",
+							"parameter_type": 2,
+							"parameter_enum": [
+								"Off",
+								"On"
+							],
+							"parameter_mmax": 1,
+							"parameter_initial_enable": 1,
+							"parameter_initial": [
+								1
+							]
+						}
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "set_loop",
+					"maxclass": "newobj",
+					"text": "prepend set",
+					"numinlets": 1,
+					"numoutlets": 1,
+					"outlettype": [
+						""
+					],
+					"patching_rect": [
+						1760,
+						596,
+						77,
 						22
 					]
 				}
@@ -2850,6 +3465,54 @@
 			{
 				"patchline": {
 					"source": [
+						"midiparse",
+						4
+					],
+					"destination": [
+						"pre_touch",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"midiparse",
+						6
+					],
+					"destination": [
+						"pre_chan",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"pre_touch",
+						0
+					],
+					"destination": [
+						"brain",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"pre_chan",
+						0
+					],
+					"destination": [
+						"brain",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
 						"pre_note",
 						0
 					],
@@ -2926,6 +3589,42 @@
 						0
 					],
 					"destination": [
+						"ped_A_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_A_menu",
+						0
+					],
+					"destination": [
+						"set_ped_A",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_ped_A",
+						0
+					],
+					"destination": [
+						"ped_A",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_A_menu",
+						0
+					],
+					"destination": [
 						"pre_ped_A",
 						0
 					]
@@ -2947,6 +3646,42 @@
 				"patchline": {
 					"source": [
 						"ped_B",
+						0
+					],
+					"destination": [
+						"ped_B_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_B_menu",
+						0
+					],
+					"destination": [
+						"set_ped_B",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_ped_B",
+						0
+					],
+					"destination": [
+						"ped_B",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_B_menu",
 						0
 					],
 					"destination": [
@@ -2974,6 +3709,42 @@
 						0
 					],
 					"destination": [
+						"ped_C_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_C_menu",
+						0
+					],
+					"destination": [
+						"set_ped_C",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_ped_C",
+						0
+					],
+					"destination": [
+						"ped_C",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_C_menu",
+						0
+					],
+					"destination": [
 						"pre_ped_C",
 						0
 					]
@@ -2995,6 +3766,42 @@
 				"patchline": {
 					"source": [
 						"ped_LKL",
+						0
+					],
+					"destination": [
+						"ped_LKL_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_LKL_menu",
+						0
+					],
+					"destination": [
+						"set_ped_LKL",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_ped_LKL",
+						0
+					],
+					"destination": [
+						"ped_LKL",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_LKL_menu",
 						0
 					],
 					"destination": [
@@ -3022,6 +3829,42 @@
 						0
 					],
 					"destination": [
+						"ped_LKR_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_LKR_menu",
+						0
+					],
+					"destination": [
+						"set_ped_LKR",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_ped_LKR",
+						0
+					],
+					"destination": [
+						"ped_LKR",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_LKR_menu",
+						0
+					],
+					"destination": [
 						"pre_ped_LKR",
 						0
 					]
@@ -3046,6 +3889,42 @@
 						0
 					],
 					"destination": [
+						"ped_RKL_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_RKL_menu",
+						0
+					],
+					"destination": [
+						"set_ped_RKL",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_ped_RKL",
+						0
+					],
+					"destination": [
+						"ped_RKL",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_RKL_menu",
+						0
+					],
+					"destination": [
 						"pre_ped_RKL",
 						0
 					]
@@ -3067,6 +3946,42 @@
 				"patchline": {
 					"source": [
 						"ped_RKR",
+						0
+					],
+					"destination": [
+						"ped_RKR_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_RKR_menu",
+						0
+					],
+					"destination": [
+						"set_ped_RKR",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_ped_RKR",
+						0
+					],
+					"destination": [
+						"ped_RKR",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"ped_RKR_menu",
 						0
 					],
 					"destination": [
@@ -3139,6 +4054,66 @@
 				"patchline": {
 					"source": [
 						"pre_mode",
+						0
+					],
+					"destination": [
+						"brain",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"mpe",
+						0
+					],
+					"destination": [
+						"mpe_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"mpe_menu",
+						0
+					],
+					"destination": [
+						"set_mpe",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_mpe",
+						0
+					],
+					"destination": [
+						"mpe",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"mpe_menu",
+						0
+					],
+					"destination": [
+						"pre_mpe",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"pre_mpe",
 						0
 					],
 					"destination": [
@@ -3499,6 +4474,42 @@
 				"patchline": {
 					"source": [
 						"loop",
+						0
+					],
+					"destination": [
+						"loop_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"loop_menu",
+						0
+					],
+					"destination": [
+						"set_loop",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"set_loop",
+						0
+					],
+					"destination": [
+						"loop",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"loop_menu",
 						0
 					],
 					"destination": [
@@ -3838,7 +4849,7 @@
 						0
 					],
 					"destination": [
-						"ped_A",
+						"mpe_menu",
 						0
 					]
 				}
@@ -3850,7 +4861,7 @@
 						0
 					],
 					"destination": [
-						"ped_B",
+						"ped_A_menu",
 						0
 					]
 				}
@@ -3862,7 +4873,7 @@
 						0
 					],
 					"destination": [
-						"ped_C",
+						"ped_B_menu",
 						0
 					]
 				}
@@ -3874,7 +4885,7 @@
 						0
 					],
 					"destination": [
-						"ped_LKL",
+						"ped_C_menu",
 						0
 					]
 				}
@@ -3886,7 +4897,7 @@
 						0
 					],
 					"destination": [
-						"ped_LKR",
+						"ped_LKL_menu",
 						0
 					]
 				}
@@ -3898,7 +4909,7 @@
 						0
 					],
 					"destination": [
-						"ped_RKL",
+						"ped_LKR_menu",
 						0
 					]
 				}
@@ -3910,7 +4921,19 @@
 						0
 					],
 					"destination": [
-						"ped_RKR",
+						"ped_RKL_menu",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"msg_bang",
+						0
+					],
+					"destination": [
+						"ped_RKR_menu",
 						0
 					]
 				}
@@ -4054,7 +5077,7 @@
 						0
 					],
 					"destination": [
-						"loop",
+						"loop_menu",
 						0
 					]
 				}
@@ -4108,6 +5131,277 @@
 				}
 			}
 		],
+		"parameters": {
+			"ped_A": [
+				"Pedal A UI",
+				"A",
+				0
+			],
+			"ped_A_menu": [
+				"Pedal A",
+				"A",
+				0
+			],
+			"ped_B": [
+				"Pedal B UI",
+				"B",
+				0
+			],
+			"ped_B_menu": [
+				"Pedal B",
+				"B",
+				0
+			],
+			"ped_C": [
+				"Pedal C UI",
+				"C",
+				0
+			],
+			"ped_C_menu": [
+				"Pedal C",
+				"C",
+				0
+			],
+			"ped_LKL": [
+				"Pedal LKL UI",
+				"LKL",
+				0
+			],
+			"ped_LKL_menu": [
+				"Pedal LKL",
+				"LKL",
+				0
+			],
+			"ped_LKR": [
+				"Pedal LKR UI",
+				"LKR",
+				0
+			],
+			"ped_LKR_menu": [
+				"Pedal LKR",
+				"LKR",
+				0
+			],
+			"ped_RKL": [
+				"Pedal RKL UI",
+				"RKL",
+				0
+			],
+			"ped_RKL_menu": [
+				"Pedal RKL",
+				"RKL",
+				0
+			],
+			"ped_RKR": [
+				"Pedal RKR UI",
+				"RKR",
+				0
+			],
+			"ped_RKR_menu": [
+				"Pedal RKR",
+				"RKR",
+				0
+			],
+			"mode": [
+				"Mode",
+				"Mode",
+				0
+			],
+			"mpe": [
+				"MPE UI",
+				"MPE",
+				0
+			],
+			"mpe_menu": [
+				"MPE",
+				"MPE",
+				0
+			],
+			"bar": [
+				"Bar",
+				"Bar",
+				0
+			],
+			"slide": [
+				"Slide",
+				"Slide",
+				0
+			],
+			"strum": [
+				"Strum",
+				"Strum",
+				0
+			],
+			"bendin": [
+				"Bend In",
+				"BendIn",
+				0
+			],
+			"vibrato": [
+				"Vibrato",
+				"Vib",
+				0
+			],
+			"swell": [
+				"Swell",
+				"Swell",
+				0
+			],
+			"sustain": [
+				"Sustain",
+				"Sustain",
+				0
+			],
+			"tone": [
+				"Tone",
+				"Tone",
+				0
+			],
+			"reverb": [
+				"Reverb",
+				"Reverb",
+				0
+			],
+			"volume": [
+				"Volume",
+				"Vol",
+				0
+			],
+			"drop": [
+				"Sample",
+				"Sample",
+				0
+			],
+			"loop": [
+				"Loop UI",
+				"Loop",
+				0
+			],
+			"loop_menu": [
+				"Loop",
+				"Loop",
+				0
+			],
+			"root": [
+				"Root",
+				"Root",
+				0
+			],
+			"fine": [
+				"Fine",
+				"Fine",
+				0
+			],
+			"lstart": [
+				"Loop Start",
+				"Start",
+				0
+			],
+			"lend": [
+				"Loop End",
+				"End",
+				0
+			],
+			"parameterbanks": {
+				"0": {
+					"index": 0,
+					"name": "Play",
+					"parameters": [
+						"Bar",
+						"Slide",
+						"Strum",
+						"Bend In",
+						"Vibrato",
+						"Mode",
+						"MPE",
+						"-"
+					],
+					"buttons": [
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-"
+					]
+				},
+				"1": {
+					"index": 1,
+					"name": "Sound",
+					"parameters": [
+						"Swell",
+						"Sustain",
+						"Tone",
+						"Reverb",
+						"Volume",
+						"-",
+						"-",
+						"-"
+					],
+					"buttons": [
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-"
+					]
+				},
+				"2": {
+					"index": 2,
+					"name": "Pedals",
+					"parameters": [
+						"Pedal A",
+						"Pedal B",
+						"Pedal C",
+						"Pedal LKL",
+						"Pedal LKR",
+						"Pedal RKL",
+						"Pedal RKR",
+						"-"
+					],
+					"buttons": [
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-"
+					]
+				},
+				"3": {
+					"index": 3,
+					"name": "Sample",
+					"parameters": [
+						"Loop",
+						"Root",
+						"Fine",
+						"Loop Start",
+						"Loop End",
+						"-",
+						"-",
+						"-"
+					],
+					"buttons": [
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-",
+						"-"
+					]
+				}
+			},
+			"inherited_shortname": 1
+		},
 		"dependency_cache": [],
 		"autosave": 0,
 		"project": {

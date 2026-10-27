@@ -28,6 +28,7 @@ var WINDOW_MS = 12;  // notes this close together form one chord
 var GRACE_MS = 60;   // a string released this recently still counts as legato
 var STRING_KEYS = { 48: 9, 50: 8, 52: 7, 53: 6, 55: 5, 57: 4, 59: 3, 60: 2, 62: 1, 64: 0 }; // C3..E4 white keys
 var PEDAL_KEYS = { 36: 0, 38: 1, 40: 2, 41: 3, 43: 4, 45: 5, 47: 6 };                     // C2..B2 white keys
+var MPE_BEND = 48;   // per-note pitch bend range (semitones), the MPE default
 
 function offsets(mask, only) {
     var off = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], up = off.slice(), down = off.slice();
@@ -74,12 +75,17 @@ function reset() {
         auto: 0, manual: 0, keyPedals: 0, used: 0, // used: latched pedals the current chord needs
         slide: 180, ringMs: 12000, blocks: 0, strum: 12, bendIn: 0.4, vibKnob: 0.25, modwheel: 0, sustain: false,
         keys: {},        // held key → folded note (chords mode) / string (strings mode)
-        pending: [],     // [{n, v, tap}] notes waiting for the chord window
+        pending: [],     // [{n, v, tap, ch}] notes waiting for the chord window
+        mpe: true,       // MPE switch: off = every channel plays like channel 1
+        chan: 1,         // MIDI channel of the message being handled (midiparse sends it first)
+        expr: {},        // MPE channel (2..16) → {bend, press, slide} for the note on it
         str: [], sent: [], counter: [],
         prebend: null, now: function () { return new Date().getTime(); }
     };
     for (var i = 0; i < 10; i++) {
-        S.str.push({ note: -1, lastNote: -1, releasedAt: -1e9, pluckedAt: -1e9, offset: 0, pre: 0 });
+        // ch: channel that picked it (0 = released, its MPE expression frozen); mpe/gain/tilt: that expression
+        S.str.push({ note: -1, lastNote: -1, releasedAt: -1e9, pluckedAt: -1e9, offset: 0, pre: 0,
+                     ch: 0, mpe: 0, gain: 1, tilt: 0.5 });
         S.sent.push(-1); S.counter.push(0);
     }
 }
@@ -95,7 +101,7 @@ function pedalTime() { return Math.max(60, Math.min(400, S.slide * 0.6)); }
 
 function target(s) {
     var m = mask(), off = offs(m)[s];
-    return OPEN[s] + S.bar + S.bendFrets + off + S.str[s].offset - S.str[s].pre - (off ? 0 : cabDrop(m));
+    return OPEN[s] + S.bar + S.bendFrets + off + S.str[s].offset + S.str[s].mpe - S.str[s].pre - (off ? 0 : cabDrop(m));
 }
 
 function cabDrop(m) {
@@ -139,9 +145,44 @@ function pluckString(s, vel, delayMs) {
 
 function damp(s) {
     S.str[s].note = -1;
+    S.str[s].ch = 0;
     S.str[s].releasedAt = S.now();
     outlet(0, "d" + s, 1);
     outlet(1, "release", s + 1);
+}
+
+// MPE: a string picked on channel 2..16 follows that channel's bend, pressure (level) and
+// slide CC 74 (brightness); one picked on channel 1 is plain. Call before sendPitches.
+function exprState() {
+    for (var s = 0; s < 10; s++) {
+        var st = S.str[s], e = st.ch >= 2 ? S.expr[st.ch] : null;
+        if (!st.ch) continue;
+        st.mpe = e ? e.bend : 0;
+        var gain = e && e.press >= 0 ? 0.35 + 0.65 * e.press : 1, tilt = e && e.slide >= 0 ? e.slide : 0.5;
+        if (gain !== st.gain) outlet(0, "x" + s, st.gain = gain);
+        if (tilt !== st.tilt) outlet(0, "t" + s, st.tilt = tilt);
+    }
+}
+
+function chanExpr() {
+    return S.expr[S.chan] || (S.expr[S.chan] = { bend: 0, press: -1, slide: -1 });
+}
+
+function chan(c) { S.chan = S.mpe ? c : 1; }
+
+function mpe(on) { // MPE switch; turning it off makes sounding strings plain
+    S.mpe = !!on;
+    if (S.mpe) return;
+    S.expr = {};
+    for (var s = 0; s < 10; s++) if (S.str[s].ch >= 2) S.str[s].ch = 1;
+    exprState();
+    sendPitches(20);
+}
+
+function touch(v) { // channel pressure
+    if (S.chan < 2) return;
+    chanExpr().press = v / 127;
+    exprState();
 }
 
 function vibOut() { outlet(0, "vib", Math.max(S.vibKnob, S.modwheel)); }
@@ -155,7 +196,7 @@ function note(key, vel) {
     S.keys[key] = n;
     for (var s = 0; s < 10; s++) if (S.str[s].note === n) S.str[s].note = -1; // re-pick a repeated note
     for (var i = 0; i < S.pending.length; i++) if (S.pending[i].n === n) return;
-    S.pending.push({ n: n, v: vel / 127, tap: false });
+    S.pending.push({ n: n, v: vel / 127, tap: false, ch: S.chan });
     if (S.pending.length === 1) {
         if (chordTask) chordTask.schedule(WINDOW_MS); else solve();
     }
@@ -197,17 +238,25 @@ function stringsNoteOn(key, v) {
     if (s === undefined) return;
     S.keys[key] = key;
     S.str[s].note = key;
+    S.str[s].ch = S.chan;
+    exprState();
+    var snap = {};
+    snap[s] = true;
+    sendPitches(20, snap);
     pluckString(s, v, 0);
 }
 
-function bend(v) { // midiparse pitch bend, 0..127 (64 = centre) → ±2 frets
-    S.bendFrets = 2 * Math.max(-1, Math.min(1, (v - 64) / 63));
+function bend(v) { // midiparse @hires 1 pitch bend, -1..1: ±2 frets on channel 1, that note's string(s) on 2..16
+    v = Math.max(-1, Math.min(1, v));
+    if (S.chan >= 2) { chanExpr().bend = v * MPE_BEND; exprState(); return sendPitches(10); }
+    S.bendFrets = 2 * v;
     sendPitches(20);
 }
 
 function cc(num, val) {
     if (num === 1) { S.modwheel = val / 127; vibOut(); }
     else if (num === 11) outlet(0, "volpedal", val / 127);
+    else if (num === 74 && S.chan >= 2) { chanExpr().slide = val / 127; exprState(); }
     else if (num === 64) {
         S.sustain = val >= 64;
         if (!S.sustain) {
@@ -403,6 +452,7 @@ function solve() {
         S.str[a.s].offset = a.offset || 0;
         S.str[a.s].note = required[a.i].n;
         S.str[a.s].lastNote = required[a.i].n;
+        S.str[a.s].ch = required[a.i].ch;
         if (a.glide) {
             outlet(0, "d" + a.s, 0);
             if (now - S.str[a.s].pluckedAt > S.ringMs / 3) plucks.push(a); // faded 20 dB+: pick it as it slides
@@ -415,6 +465,7 @@ function solve() {
     // Ringing strings glide; strings about to be picked snap to pitch.
     var snap = {};
     for (i = 0; i < plucks.length; i++) if (!plucks[i].glide) snap[plucks[i].s] = true;
+    exprState();
     sendPitches(barMoved ? S.slide : pedalTime(), snap);
     plucks.sort(function (x, y) { return y.s - x.s; }); // strum low → high
     for (i = 0; i < plucks.length; i++) {
@@ -438,7 +489,7 @@ function applyBend() {
 if (typeof module !== "undefined") {
     module.exports = {
         get S() { return S; }, reset: reset, note: note, noteoff: noteoff, solve: solve, applyBend: applyBend,
-        bend: bend, cc: cc, mode: mode, bar: bar, pedal: pedal, pluck: pluck, init: init,
+        bend: bend, cc: cc, chan: chan, touch: touch, mpe: mpe, mode: mode, bar: bar, pedal: pedal, pluck: pluck, init: init,
         bendin: bendin, strum: strum, slide: slide, ring: ring, vibrato: vibrato,
         offsets: offsets, findVoicing: findVoicing, target: target, OPEN: OPEN, COMBOS: COMBOS
     };

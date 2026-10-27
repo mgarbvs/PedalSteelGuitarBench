@@ -19,6 +19,16 @@ DEVICE_W = 740
 # gliding pitch (so the bar and pedals bend ringing strings), a one-pole loss
 # filter, a noise-burst pick, and a per-note "volume pedal" swell envelope.
 
+# MPE per string: x = pressure level, t = slide brightness (tilt around ~1 kHz; 0.5 = flat), smoothed ~10 ms.
+EXPR = """xs{i} = xs{i} + 0.002 * (x{i} - xs{i}); ts{i} = ts{i} + 0.002 * (t{i} - ts{i});
+tl{i} = tl{i} + 0.15 * (s - tl{i});
+s = (tl{i} + (s - tl{i}) * exp2(ts{i} * 3 - 1.5)) * xs{i};"""
+
+
+def expr_decl(i):
+    return [f"Param x{i}(1);", f"Param t{i}(0.5);", f"History xs{i}(1);", f"History ts{i}(0.5);", f"History tl{i}(0);"]
+
+
 STRING = """
 // string {i}
 if (p{i} != last{i}) {{ n = max(1, g{i} * sr / 1000); slope{i} = (p{i} - cur{i}) / n; left{i} = n; last{i} = p{i}; }}
@@ -52,6 +62,7 @@ lp{i} = (1 - bb) * y + bb * lp{i};
 dl{i}.write(clamp((lp{i} + (blk{i} > 0 ? 0 : coup{i} * 0.008)) * exp(-6.9078 * per / ((blk{i} > 0 ? 150 : sustain) * sr / 1000)) + x, -4, 4));
 env{i} = swelling ? min(1, env{i} + swinc) : 1;
 s = y * env{i} * env{i};
+{expr}
 L = L + s * {gl};
 R = R + s * {gr};
 lasts{i} = s;
@@ -105,7 +116,7 @@ def gen_code():
             f"History lastk{i}(0);", f"History wait{i}(-1);", f"History burst{i}(0);", f"History vel{i}(0);",
             f"History env{i}(1);", f"History lp{i}(0);", f"History exlp{i}(0);", f"History lastd{i}(1);", f"History blk{i}(0);",
             f"History lasts{i}(0);", f"History symlp{i}(0);", f"History symhp{i}(0);",
-        ]
+        ] + expr_decl(i)
     decl.append("History symsum(0);")   # sympathetic-resonance bus: raw sum of last sample's string outputs
     out_decl, out_body = output_stage()
     decl += out_decl
@@ -126,7 +137,7 @@ def gen_code():
     ]
     for i in range(10):
         theta = (0.5 + 0.3 * (4.5 - i) / 4.5) * math.pi / 2     # string 1 right, string 10 left
-        body.append(STRING.format(i=i, detune=DETUNE_CENTS[i] / 100,
+        body.append(STRING.format(i=i, expr=EXPR.format(i=i), detune=DETUNE_CENTS[i] / 100,
                                   gl=round(math.cos(theta), 4), gr=round(math.sin(theta), 4)))
     body += [
         "if (plucked) { vibenv = 0; }",
@@ -243,6 +254,43 @@ def dial(bid, longname, short, rect, lo, hi, init, unitstyle, info, exponent=1.0
                saved_attribute_attributes={"valueof": valueof})
 
 
+def push_toggle(bid):
+    """Push shows a live.text toggle as val1/val2; only live.menu surfaces Off/On. So the visible
+    toggle becomes a stored-only "<name> UI" parameter and a hidden live.menu takes over its longname
+    (automation, Push). Wire consumers and the load bang from the returned menu id."""
+    box = next(b["box"] for b in boxes if b["box"]["id"] == bid)
+    v = box["saved_attribute_attributes"]["valueof"]
+    mid = bid + "_menu"
+    x, y = box["patching_rect"][:2]
+    add(id=mid, maxclass="live.menu", varname=mid, hidden=1, numinlets=1, numoutlets=3,
+        outlettype=["", "", "float"], parameter_enable=1, patching_rect=[x, y + 60, 60, 20],
+        saved_attribute_attributes={"valueof": dict(v)})
+    v["parameter_longname"] += " UI"
+    v["parameter_invisible"] = 1
+    obj(f"set_{bid}", "prepend set", x, y + 90)
+    wire(bid, mid)                 # click → parameter
+    wire(mid, f"set_{bid}")        # parameter (Push, automation, load) → display, without output
+    wire(f"set_{bid}", bid)
+    return mid
+
+
+def param_banks(banks):
+    """Baked Push banks: (name, [box ids]) → the patcher's "parameters" registry. Banks longer than
+    8 continue on "<name> 2"."""
+    params = {b["box"]["id"]: b["box"]["saved_attribute_attributes"]["valueof"] for b in boxes
+              if b["box"].get("parameter_enable")}
+    reg = {bid: [v["parameter_longname"], v["parameter_shortname"], 0] for bid, v in params.items()}
+    reg["parameterbanks"] = {}
+    for name, ids in banks:
+        for k in range(0, len(ids), 8):
+            names = [params[i]["parameter_longname"] for i in ids[k:k + 8]]
+            n = len(reg["parameterbanks"])
+            reg["parameterbanks"][str(n)] = {"index": n, "name": name + (f" {k // 8 + 1}" if k else ""),
+                                             "parameters": names + ["-"] * (8 - len(names)), "buttons": ["-"] * 8}
+    reg["inherited_shortname"] = 1
+    return reg
+
+
 # ── Build ───────────────────────────────────────────────────────────────────
 
 SOUND = [
@@ -259,16 +307,17 @@ SOUND = [
 ]
 
 
-def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
+def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None, extra_bank=None,
           description="Pedal steel guitar: play chords, get steel.", engine_ins=0, amxdtype=1768515945):
-    """extra(): adds device-specific boxes and returns the ids to bang on load.
+    """extra(): adds device-specific boxes and returns the ids to bang on load. Its visible parameters
+    get their own Push bank named extra_bank, or join the Sound bank when that's None.
     engine_ins: gen~ audio inlets (in 1..n). amxdtype: 'iiii' instrument (default) or 'aaaa' audio effect."""
     code = code or gen_code()
     sound = sound or SOUND
     # MIDI in → brain
     obj("thisdev", "live.thisdevice", 20, 20, ins=1, outs=3, outtype=["bang", "int", "int"])
     obj("midiin", "midiin", 20, 60)
-    obj("midiparse", "midiparse", 20, 90, ins=1, outs=8, outtype=["", "", "", "int", "int", "int", "int", ""])
+    obj("midiparse", "midiparse @hires 1", 20, 90, ins=1, outs=8, outtype=["", "", "", "int", "int", "int", "int", ""])
     obj("pre_note", "prepend note", 20, 130)
     obj("pre_cc", "prepend cc", 130, 130)
     obj("pre_bend", "prepend bend", 240, 130)
@@ -277,6 +326,12 @@ def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
     wire("midiparse", "pre_note", 0)
     wire("midiparse", "pre_cc", 2)
     wire("midiparse", "pre_bend", 5)
+    obj("pre_touch", "prepend touch", 350, 130)    # channel pressure (MPE)
+    obj("pre_chan", "prepend chan", 460, 130)      # fires before each message: the brain's MPE channel
+    wire("midiparse", "pre_touch", 4)
+    wire("midiparse", "pre_chan", 6)
+    wire("pre_touch", "brain")
+    wire("pre_chan", "brain")
     for p in ("pre_note", "pre_cc", "pre_bend"):
         wire(p, "brain")
 
@@ -325,7 +380,7 @@ def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
                 "parameter_enum": ["Off", "On"], "parameter_mmax": 1,
                 "parameter_initial_enable": 1, "parameter_initial": [0]}})
         obj(f"pre_{bid}", f"prepend pedal {name}", x + 900, 740)
-        wire(bid, f"pre_{bid}")
+        wire(push_toggle(bid), f"pre_{bid}")
         wire(f"pre_{bid}", "brain")
 
     # Neck display (the big clickable steel)
@@ -348,7 +403,7 @@ def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
         annotation="Chords: play anything on your keyboard and it is voiced like a steel player "
                    "would, with automatic bar slides and pedal bends. Strings: play the real "
                    "instrument — white keys C3–E4 pick strings, C2–B2 hold pedals and levers.",
-        patching_rect=[480 + 900, 504, 150, 18], **pres([580, 7, 150, 17]),
+        patching_rect=[480 + 900, 504, 104, 18], **pres([580, 7, 104, 17]),
         saved_attribute_attributes={"valueof": {
             "parameter_longname": "Mode", "parameter_shortname": "Mode", "parameter_type": 2,
             "parameter_enum": ["Chords", "Strings"], "parameter_mmax": 1,
@@ -356,6 +411,19 @@ def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
     obj("pre_mode", "prepend mode", 480, 20)
     wire("mode", "pre_mode")
     wire("pre_mode", "brain")
+    add(id="mpe", maxclass="live.text", varname="mpe", numinlets=1, numoutlets=2, outlettype=["", ""],
+        parameter_enable=1, mode=1, text="MPE", texton="MPE", annotation_name="MPE",
+        annotation="On: each note's own pitch bend, pressure and slide (Push 3, Seaboard, Linnstrument…) "
+                   "bend, swell and brighten just its string. Off: every MIDI channel plays like an "
+                   "ordinary keyboard, and pitch bend moves the bar.",
+        patching_rect=[640 + 900, 504, 42, 18], **pres([688, 7, 42, 17]),
+        saved_attribute_attributes={"valueof": {
+            "parameter_longname": "MPE", "parameter_shortname": "MPE", "parameter_type": 2,
+            "parameter_enum": ["Off", "On"], "parameter_mmax": 1,
+            "parameter_initial_enable": 1, "parameter_initial": [1]}})
+    obj("pre_mpe", "prepend mpe", 640, 20)
+    wire(push_toggle("mpe"), "pre_mpe")
+    wire("pre_mpe", "brain")
 
     play = [
         ("bar", "Bar", "Bar", 0, 22, 0, 1, "bar",
@@ -401,8 +469,16 @@ def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
     wire("load_trig", "msg_init", 0)          # right-to-left: controls first, then init
     wire("load_trig", "msg_bang", 1)
     wire("msg_init", "brain")
-    for bid in ["mode"] + ["ped_" + p[0] for p in PEDALS] + [p[0] for p in play + sound] + extra_bids:
+    pedal_ids = ["ped_" + p[0] + "_menu" for p in PEDALS]
+    for bid in ["mode", "mpe_menu"] + pedal_ids + [p[0] for p in play + sound] + extra_bids:
         wire("msg_bang", bid)
+
+    # Push: one encoder page each for playing, sound and the pedals (latch them from the encoders).
+    extra_params = [b for b in extra_bids if any(x["box"]["id"] == b and x["box"].get("parameter_enable") and
+                    not x["box"]["saved_attribute_attributes"]["valueof"].get("parameter_invisible") for x in boxes)]
+    banks = [("Play", [p[0] for p in play] + ["mode", "mpe_menu"]),
+             ("Sound", [p[0] for p in sound] + ([] if extra_bank else extra_params)),
+             ("Pedals", pedal_ids)] + ([(extra_bank, extra_params)] if extra_bank else [])
 
     patcher = {
         "fileversion": 1,
@@ -419,6 +495,7 @@ def build(code=None, sound=None, width=DEVICE_W, engine_text="gen~", extra=None,
         "description": description,
         "boxes": boxes,
         "lines": lines,
+        "parameters": param_banks(banks),
         "dependency_cache": [],
         "autosave": 0,
         # Max's project system needs this block (without it: "a project without a name is like a
