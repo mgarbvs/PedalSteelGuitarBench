@@ -70,8 +70,15 @@ behaves like strings that can be re-tuned while they ring.
   over the glide time. Because the ringing waveform is re-read at a new rate rather than restarted, a pedal
   or bar move sounds like the same string being stretched, not a new note. Strings about to be picked jump
   straight to pitch; ringing ones glide.
-- **The pick.** A noise burst exactly one period long, low-passed harder for soft notes and lighter for hard
-  ones (and by Tone), so velocity changes brightness as well as level, like a metal fingerpick.
+- **The pick.** A string plucked a fixed distance from the bridge (`PICK_FRAC`) gives a two-level wave, so harmonics
+  with a node at the pick point drop out, with a little noise for pick scratch. It is low-passed harder for soft notes
+  and lighter for hard ones (and by Tone), so velocity changes brightness as well as level. The wave is level-matched
+  so every pitch is picked equally hard, and each pick goes up or down at random so a chord's strings don't all
+  push the same way at once.
+- **The pickup.** A single coil sits a fixed distance from the bridge (`PICKUP_FRAC`), so it hears each string
+  and its bridge reflection a fixed time apart, which comb-filters every string at fixed frequencies. The coil's
+  resonant low-pass (`PICKUP_RES_HZ`) adds the bite of a real pickup. The sympathetic bus still taps the strings
+  before the pickup, so the strings still couple at the bridge.
 - **Long sustain, fast damping.** A per-pass gain makes each string ring down 60 dB over the Sustain time
   (up to 30 s, steel strings barely die); a released string decays in 150 ms and darkens, like a palm block.
 - **Slight detune.** Each string is ±0.5–1.5 cents off, so chords shimmer instead of beating perfectly

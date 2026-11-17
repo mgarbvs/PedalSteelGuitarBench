@@ -12,6 +12,13 @@ import sys
 
 OPEN = [66, 63, 68, 64, 59, 56, 54, 52, 50, 47]      # E9, strings 1..10
 DETUNE_CENTS = [1.5, -1, 0.5, -1.5, 1, -0.5, 1.5, -1, 0.5, -1.5]
+PICKUP_FRAC = 1 / 14     # pickup distance from the bridge as a fraction of the open string (about 1.7" of 24"); tune by ear
+PICKUP_GAIN = 0.81       # make-up gain after the comb: keeps levels where they were without the pickup
+PICKUP_RES_HZ = 4000     # coil resonance; tune by ear
+PICKUP_RES_Q = 1.5
+PICK_FRAC = 0.2          # where the right hand picks: distance from the bridge as a fraction of the open string (about 4.8" of 24"); tune by ear
+PICK_NOISE = 0.1         # pick scratch: noise mixed into the pluck, so no two picks are identical
+PICK_GAIN = 0.32         # pick level: keeps overall levels where they were with the old noise pick
 DEVICE_W = 740
 
 # ── Gen~ engine ─────────────────────────────────────────────────────────────
@@ -53,20 +60,30 @@ look = clamp(per - atan2(bb * sin(omega), 1 - bb * cos(omega)) / omega, 2, 8190)
 if (k{i} != lastk{i}) {{ lastk{i} = k{i}; wait{i} = w{i} * sr / 1000; }}
 if (wait{i} >= 0) {{
     wait{i} = wait{i} - 1;
-    if (wait{i} < 0) {{ burst{i} = per; vel{i} = v{i}; env{i} = swelling ? 0 : 1; plucked = 1; }}
+    if (wait{i} < 0) {{ burst{i} = per; vel{i} = v{i}; pol{i} = noise() < 0 ? -1 : 1; env{i} = swelling ? 0 : 1; plucked = 1; }}
 }}
 x = 0;
-if (burst{i} > 0) {{ exlp{i} = exlp{i} + pickc * vel{i} * (noise() * vel{i} - exlp{i}); x = exlp{i}; burst{i} = burst{i} - 1; }}
+pkr = clamp({pkd} * sr / per, 0.1, 0.5);    // the pick point as a fraction of the sounding string (never past the middle)
+pkn = pkr * per;                            // samples of the period spent on the "high" level
+pkx = 0;
+if (burst{i} > 0) {{
+    pkx = ((pol{i} * (burst{i} <= pkn ? 1 : -pkn / (per - pkn))) * (1 - pkr) / sin(twopi * 0.5 * pkr) + {pknoise} * noise()) * vel{i} * {pkgain};
+    burst{i} = burst{i} - 1;
+}}
+exlp{i} = exlp{i} + pickc * vel{i} * (pkx - exlp{i});
+x = exlp{i};
 y = dl{i}.read(look, interp="cubic");
+yd = dl{i}.read(look + {pud} * sr, interp="cubic");
 lp{i} = (1 - bb) * y + bb * lp{i};
 dl{i}.write(clamp((lp{i} + (blk{i} > 0 ? 0 : coup{i} * 0.008)) * exp(-6.9078 * per / ((blk{i} > 0 ? 150 : sustain) * sr / 1000)) + x, -4, 4));
 env{i} = swelling ? min(1, env{i} + swinc) : 1;
-s = y * env{i} * env{i};
+sy = y * env{i} * env{i} * xs{i};                     // the string itself: feeds the sympathetic bus (strings couple at the bridge, before the pickup)
+s = (y - yd) * {pugain} * env{i} * env{i};      // what the pickup hears
 {expr}
 L = L + s * {gl};
 R = R + s * {gr};
-lasts{i} = s;
-symacc = symacc + s;
+lasts{i} = sy;
+symacc = symacc + sy;
 """
 
 # Pedal board hover/click zones: transparent live.text toggles laid over the pedals that
@@ -113,17 +130,19 @@ def gen_code():
             f"Param w{i}(0);", f"Param d{i}(1);",
             f"Delay dl{i}(8192);",
             f"History cur{i}({o});", f"History last{i}({o});", f"History slope{i}(0);", f"History left{i}(0);",
-            f"History lastk{i}(0);", f"History wait{i}(-1);", f"History burst{i}(0);", f"History vel{i}(0);",
+            f"History lastk{i}(0);", f"History wait{i}(-1);", f"History burst{i}(0);", f"History pol{i}(1);", f"History vel{i}(0);",
             f"History env{i}(1);", f"History lp{i}(0);", f"History exlp{i}(0);", f"History lastd{i}(1);", f"History blk{i}(0);",
             f"History lasts{i}(0);", f"History symlp{i}(0);", f"History symhp{i}(0);",
         ] + expr_decl(i)
     decl.append("History symsum(0);")   # sympathetic-resonance bus: raw sum of last sample's string outputs
+    for ch in "lr":   # pickup coil resonance (biquad low-pass): past two inputs and outputs per channel
+        decl += [f"History pux{ch}1(0);", f"History pux{ch}2(0);", f"History puy{ch}1(0);", f"History puy{ch}2(0);"]
     out_decl, out_body = output_stage()
     decl += out_decl
 
     body = [
         "sr = samplerate;",
-        "n = 0; f = 0; per = 0; omega = 0; bb = 0; look = 0; x = 0; y = 0; s = 0; plucked = 0; L = 0; R = 0;"
+        "n = 0; f = 0; per = 0; omega = 0; bb = 0; look = 0; x = 0; y = 0; yd = 0; s = 0; sy = 0; plucked = 0; L = 0; R = 0; pkr = 0; pkn = 0; pkx = 0;"
         " symacc = 0; othersum = 0;",
         "blkall = blockall != lastba; lastba = blockall;",   # palm block: the brain bumps it when the last key lifts
         "vibph = wrap(vibph + 5.5 / sr, 0, 1);",
@@ -137,12 +156,30 @@ def gen_code():
     ]
     for i in range(10):
         theta = (0.5 + 0.3 * (4.5 - i) / 4.5) * math.pi / 2     # string 1 right, string 10 left
+        f_open = 440 * 2 ** ((OPEN[i] - 69) / 12)
         body.append(STRING.format(i=i, expr=EXPR.format(i=i), detune=DETUNE_CENTS[i] / 100,
+                                  pud=round(PICKUP_FRAC / f_open, 9), pugain=PICKUP_GAIN,
+                                  pkd=round(PICK_FRAC / f_open, 9), pknoise=PICK_NOISE, pkgain=PICK_GAIN,
                                   gl=round(math.cos(theta), 4), gr=round(math.sin(theta), 4)))
     body += [
         "if (plucked) { vibenv = 0; }",
         "symsum = symacc;",   # sympathetic bus: this sample's total, ready for next sample's "other strings" sum
     ]
+    # pickup coil resonance: RBJ low-pass biquad on L and R (this device only, not in output_stage)
+    body += [
+        f"puom = twopi * {PICKUP_RES_HZ} / sr;",
+        f"pual = sin(puom) / (2 * {PICKUP_RES_Q});",
+        "puc = cos(puom);",
+        "pub0 = (1 - puc) / 2; pub1 = 1 - puc;",
+        "pua0 = 1 + pual; pua1 = -2 * puc; pua2 = 1 - pual;",
+    ]
+    for ch in "lr":
+        X = ch.upper()
+        body += [
+            f"pux{ch}0 = {X};",
+            f"puy{ch}0 = (pub0 * pux{ch}0 + pub1 * pux{ch}1 + pub0 * pux{ch}2 - pua1 * puy{ch}1 - pua2 * puy{ch}2) / pua0;",
+            f"pux{ch}2 = pux{ch}1; pux{ch}1 = pux{ch}0; puy{ch}2 = puy{ch}1; puy{ch}1 = puy{ch}0; {X} = puy{ch}0;",
+        ]
     body += out_body
     return "\n".join(decl) + "\n" + "\n".join(body) + "\n"
 

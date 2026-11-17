@@ -121,6 +121,26 @@ console.log("mpe: soft " + (soft.lvl / flat.lvl).toFixed(2) + "x level, brightne
 assert(Math.abs(soft.lvl / flat.lvl - 0.35) < 0.05, "pressure scales level");
 assert(dark.bright < flat.bright && flat.bright < bright.bright, "slide tilts brightness");
 
+// Pickup comb: string 4 (open 64) has its first notch at 14 * 329.63 Hz = 4615 Hz, the 7th harmonic of note 76.
+function harm(x, hz) { // Hann-windowed, so the fundamental does not leak into the notch
+    var re = 0, im = 0; for (var j = 0; j < x.length; j++) { var w = x[j] * (0.5 - 0.5 * Math.cos(2 * Math.PI * j / x.length)); re += w * Math.cos(2 * Math.PI * hz * j / SR); im += w * Math.sin(2 * Math.PI * hz * j / SR); } return Math.sqrt(re * re + im * im) / x.length; }
+var pe = new Engine();
+pluck(pe, 3, 76); pe.set("reverb", 0); pe.set("vib", 0);
+var pk = pe.run(0.6)[0].subarray(SR * 0.1), pf = 440 * Math.pow(2, (76 - 1.5 / 100 - 69) / 12);
+var h6 = harm(pk, 6 * pf), h7 = harm(pk, 7 * pf), h8 = harm(pk, 8 * pf);
+var notchDb = 20 * Math.log10(h7 / ((h6 + h8) / 2));
+console.log("pickup comb: 7th harmonic " + notchDb.toFixed(1) + " dB vs 6th/8th average");
+assert(h7 < 0.25 * (h6 + h8) / 2, "pickup comb notch at 7th harmonic");
+
+// Pick position: string 4 is plucked 0.2 of the way from the bridge, so its 5th harmonic has a node there.
+var ppe = new Engine();
+pluck(ppe, 3, 64); ppe.set("reverb", 0); ppe.set("vib", 0);
+var ppk = ppe.run(0.3)[0].subarray(SR * 0.02), ppf = 440 * Math.pow(2, (64 - 1.5 / 100 - 69) / 12);
+var ph4 = harm(ppk, 4 * ppf), ph5 = harm(ppk, 5 * ppf), ph6 = harm(ppk, 6 * ppf);
+var pickDb = 20 * Math.log10(ph5 / ((ph4 + ph6) / 2));
+console.log("pick position: 5th harmonic " + pickDb.toFixed(1) + " dB vs 4th/6th average");
+assert(ph5 < 0.316 * (ph4 + ph6) / 2, "pick position node at 5th harmonic");
+
 console.log("engine: all tests passed");
 
 // Optional demo: E major → legato A major (pedal bend) → slide up to fret 3, through the brain.

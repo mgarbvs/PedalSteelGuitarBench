@@ -32,7 +32,7 @@ function Engine(code) {
         wrap: function (x, a, b) { var r = b - a; return x - r * Math.floor((x - a) / r); },
         noise: function () { seed = (seed * 16807) % 2147483647; return seed / 1073741823.5 - 1; },
         dbtoa: function (d) { return Math.pow(10, d / 20); },
-        dim: function (buf) { return buf.length; },
+        dim: function (buf) { return buf.length; }, channels: function () { return 1; },
         poke: function (buf, v, idx) { if (idx >= 0 && idx < buf.length) buf[Math.floor(idx)] = v; },
         mod: function (x, y) { return x % y; }, fract: function (x) { return x - Math.floor(x); }, round: Math.round, exp2: function (x) { return Math.pow(2, x); },
         peek: function (buf, idx) { // interp="spline", boundmode="ignore": 0 outside the buffer
